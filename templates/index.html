@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Schedule Optimizer</title>
+
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script
+        src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .timetable {
+            margin: 20px 0;
+            border-collapse: collapse;
+            width: 100%;
+            user-select: none;
+        }
+        .timetable th, .timetable td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .timetable th {
+            background-color: #007bff;
+            color: white;
+            cursor: default;
+        }
+        .cell-selected {
+            background-color: #28a745 !important;
+            color: white !important;
+        }
+        .teacher-cell {
+            cursor: pointer;
+        }
+        .teacher-unavailable {
+            background-color: #dc3545 !important;
+            color: #fff !important;
+        }
+        .student-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .small-btn {
+            padding: 2px 6px;
+            font-size: 0.75rem;
+        }
+        .section-box {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1 class="text-center mb-4">Schedule Optimizer</h1>
+
+    <!-- Campus selection -->
+    <div class="section-box">
+        <h4>Campus & Teacher Settings</h4>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label for="campus-select"><strong>Select Campus:</strong></label>
+                <select class="form-control" id="campus-select">
+                    <option value="campus_30">Campus A (30-minute periods, 12–1 lunch)</option>
+                    <option value="campus_40">Campus B (40-minute periods)</option>
+                </select>
+            </div>
+
+            <div class="form-group col-md-8">
+                <label><strong>Teacher Daily Load Limits (optional)</strong></label>
+                <div class="form-row">
+                    <div class="col">
+                        <small>Day 1</small>
+                        <input type="number" class="form-control teacher-max-input" data-day="1" min="0" placeholder="No max">
+                    </div>
+                    <div class="col">
+                        <small>Day 2</small>
+                        <input type="number" class="form-control teacher-max-input" data-day="2" min="0" placeholder="No max">
+                    </div>
+                    <div class="col">
+                        <small>Day 3</small>
+                        <input type="number" class="form-control teacher-max-input" data-day="3" min="0" placeholder="No max">
+                    </div>
+                    <div class="col">
+                        <small>Day 4</small>
+                        <input type="number" class="form-control teacher-max-input" data-day="4" min="0" placeholder="No max">
+                    </div>
+                    <div class="col">
+                        <small>Day 5</small>
+                        <input type="number" class="form-control teacher-max-input" data-day="5" min="0" placeholder="No max">
+                    </div>
+                    <div class="col">
+                        <small>Day 6</small>
+                        <input type="number" class="form-control teacher-max-input" data-day="6" min="0" placeholder="No max">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="mt-3">Teacher Unavailable Times (Blackouts)</h5>
+        <p class="text-muted mb-1">Click cells where the teacher <strong>cannot</strong> teach.</p>
+        <table class="timetable" id="teacher-grid">
+            <thead>
+            <tr>
+                <th>Time / Day</th>
+                <th>Day 1</th><th>Day 2</th><th>Day 3</th>
+                <th>Day 4</th><th>Day 5</th><th>Day 6</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Add student -->
+    <div class="section-box">
+        <h4>Add Student</h4>
+        <form id="student-form" class="mb-3">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="student-name">Student Name</label>
+                    <input type="text" class="form-control" id="student-name" required>
+                </div>
+
+                <div class="form-group col-md-4">
+                    <label for="periods-needed">Periods Required</label>
+                    <input type="number" class="form-control" id="periods-needed" min="1" required>
+                </div>
+
+                <div class="form-group col-md-4">
+                    <label for="student-tag">Tag / Category (optional)</label>
+                    <input type="text" class="form-control" id="student-tag" placeholder="e.g., ELL, G3, EF">
+                </div>
+            </div>
+
+            <p class="text-muted">
+                1. Add a student<br>
+                2. Click <strong>Edit/Select</strong> to activate them<br>
+                3. Click or drag across cells to select their availability
+            </p>
+
+            <button type="submit" class="btn btn-primary">Add Student</button>
+        </form>
+    </div>
+
+    <!-- Availability grid -->
+    <div class="section-box">
+        <h4>Student Availability Grid</h4>
+        <table class="timetable" id="availability-table">
+            <thead>
+            <tr>
+                <th>Time / Day</th>
+                <th>Day 1</th><th>Day 2</th><th>Day 3</th>
+                <th>Day 4</th><th>Day 5</th><th>Day 6</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Students -->
+    <div class="section-box">
+        <h4>Students</h4>
+        <div id="students-container"></div>
+    </div>
+
+    <!-- Groups & rules -->
+    <div class="section-box">
+        <h4>Groups & Grouping Rules</h4>
+
+        <div class="form-row mb-2">
+            <div class="form-group col-md-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="rule-same-tag">
+                    <label class="form-check-label" for="rule-same-tag">
+                        Enforce same tag within a group
+                    </label>
+                </div>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="rule-max-size">Max students per group (optional)</label>
+                <input type="number" class="form-control" id="rule-max-size" min="2" placeholder="No max">
+            </div>
+        </div>
+
+        <h5>Existing Groups</h5>
+        <button id="group-students" class="btn btn-success mb-2">Group Selected Students</button>
+        <div id="groups-container" class="mb-3"></div>
+
+        <h5>Suggested Groups (based on overlapping availability)</h5>
+        <button id="refresh-suggestions" class="btn btn-outline-primary mb-2">Refresh Suggestions</button>
+        <div id="suggested-groups-container"></div>
+    </div>
+
+    <!-- Save / Load -->
+    <div class="section-box">
+        <h4>Save / Load Schedule</h4>
+        <p class="text-muted mb-1">
+            The app auto-saves your current state in your browser. You can also load a JSON file you previously downloaded from the timetable view.
+        </p>
+        <button id="load-file-btn" class="btn btn-outline-info">Load from JSON file</button>
+        <button id="clear-state-btn" class="btn btn-outline-danger ml-2">Clear Saved State</button>
+        <input type="file" id="file-input" accept="application/json" style="display:none;">
+    </div>
+
+    <!-- Generate timetable -->
+    <div class="section-box">
+        <h4>Generate Timetable</h4>
+        <button id="generate-timetable" class="btn btn-primary">
+            Generate Timetable
+        </button>
+    </div>
+
+</div>
+
+<script>
+    // --------------------------------------------------
+    // STATE
+    // --------------------------------------------------
+    let students = [];    // { id, name, periodsNeeded, tag, availability:{ '1':[slot,...], ... } }
+    let groups = [];      // { id, names:[...] }
+    let nextStudentId = 1;
+    let nextGroupId = 1;
+    let activeStudentId = null;
+
+    let isMouseDown = false;
+    let dragMode = null;  // "add" or "remove"
+
+    let teacherMaxPerDay = {};       // { '1': int, ... }
+    let teacherUnavailability = {};  // { '1': [slot,...], ... }
+
+    let enforceSameTag = false;
+    let maxGroupSize = null;
+
+    let suggestedGroups = [];  // { id, names:[...], overlapCount }
+
+    const CAMPUS_TIME_SLOTS = {
+        "campus_30": [
+            "08:30–09:00","09:00–09:30","09:30–10:00",
+            "10:00–10:30","10:30–11:00","11:00–11:30",
+            "13:00–13:30","13:30–14:00","14:00–14:30","14:30–15:00"
+        ],
+        "campus_40": [
+            "08:20–09:00","09:00–09:40","10:00–10:40",
+            "10:40–11:20","12:00–12:40","12:40–13:20",
+            "13:40–14:20","14:20–15:00"
+        ]
+    };
+
+    const getCampus = () => $('#campus-select').val();
+    const getSlots = c => CAMPUS_TIME_SLOTS[c] || CAMPUS_TIME_SLOTS["campus_30"];
+    const getStudentById = id => students.find(s => s.id === id);
+
+    // --------------------------------------------------
+    // SAVE / LOAD STATE (localStorage)
+    // --------------------------------------------------
+    function saveState() {
+        const state = {
+            campus: getCampus(),
+            students,
+            groups,
+            teacherMaxPerDay,
+            teacherUnavailability,
+            groupRules: {
+                enforceSameTag,
+                maxGroupSize
+            }
+        };
+        try {
+            localStorage.setItem('scheduleStateV1', JSON.stringify(state));
+        } catch (e) {
+            console.warn("Could not save state", e);
+        }
+    }
+
+    function loadStateFromObject(obj) {
+        if (obj.campus) {
+            $('#campus-select').val(obj.campus);
+        } else if (obj.campus_key) {
+            $('#campus-select').val(obj.campus_key);
+        }
+
+        if (obj.students) {
+            students = obj.students.map((s, idx) => ({
+                id: s.id || (idx + 1),
+                name: s.name,
+                periodsNeeded: s.periodsNeeded,
+                tag: s.tag || "",
+                availability: s.availability || {}
+            }));
+            nextStudentId = students.length + 1;
+        }
+
+        if (obj.groups) {
+            groups = (obj.groups || []).map((g, idx) => ({
+                id: g.id || (idx + 1),
+                names: Array.isArray(g) ? g : g.names
+            }));
+            nextGroupId = groups.length + 1;
+        }
+
+        teacherMaxPerDay = obj.teacherMaxPerDay || {};
+        teacherUnavailability = obj.teacherUnavailability || {};
+
+        const rules = obj.groupRules || {};
+        enforceSameTag = !!rules.enforceSameTag;
+        maxGroupSize = rules.maxGroupSize || null;
+
+        // Reflect UI
+        $('#rule-same-tag').prop('checked', enforceSameTag);
+        $('#rule-max-size').val(maxGroupSize || '');
+
+        // Teacher max inputs
+        $('.teacher-max-input').each(function() {
+            const day = $(this).data('day').toString();
+            const val = teacherMaxPerDay[day];
+            $(this).val(val != null ? val : '');
+        });
+
+        buildAvailabilityTable();
+        buildTeacherGrid();
+        renderStudents();
+        renderGroups();
+        renderSuggestedGroups();
+        applyStudentAvailabilityToGrid();
+        applyTeacherUnavailabilityToGrid();
+    }
+
+    function loadState() {
+        const raw = localStorage.getItem('scheduleStateV1');
+        if (!raw) {
+            buildAvailabilityTable();
+            buildTeacherGrid();
+            renderStudents();
+            renderGroups();
+            renderSuggestedGroups();
+            return;
+        }
+        try {
+            const obj = JSON.parse(raw);
+            loadStateFromObject(obj);
+        } catch (e) {
+            console.error("Failed to load saved state", e);
+            buildAvailabilityTable();
+            buildTeacherGrid();
+            renderStudents();
+            renderGroups();
+            renderSuggestedGroups();
+        }
+    }
+
+    // --------------------------------------------------
+    // Build grids
+    // --------------------------------------------------
+    function buildAvailabilityTable() {
+        const tbody = $('#availability-table tbody');
+        tbody.empty();
+
+        const slots = getSlots(getCampus());
+        slots.forEach(slot => {
+            let row = `<tr><td>${slot}</td>`;
+            for (let d = 1; d <= 6; d++) {
+                row += `<td class="avail-cell" data-day="${d}" data-slot="${slot}"></td>`;
+            }
+            row += '</tr>';
+            tbody.append(row);
+        });
+
+        applyStudentAvailabilityToGrid();
+    }
+
+    function buildTeacherGrid() {
+        const tbody = $('#teacher-grid tbody');
+        tbody.empty();
+
+        const slots = getSlots(getCampus());
+        slots.forEach(slot => {
+            let row = `<tr><td>${slot}</td>`;
+            for (let d = 1; d <= 6; d++) {
+                row += `<td class="teacher-cell" data-day="${d}" data-slot="${slot}"></td>`;
+            }
+            row += '</tr>';
+            tbody.append(row);
+        });
+
+        applyTeacherUnavailabilityToGrid();
+    }
+
+    // --------------------------------------------------
+    // Render students / groups / suggestions
+    // --------------------------------------------------
+    function renderStudents() {
+        const container = $('#students-container');
+        container.empty();
+
+        students.forEach(stu => {
+            const active = stu.id === activeStudentId;
+            const totalSlots = Object.values(stu.availability)
+                .reduce((a, arr) => a + arr.length, 0);
+
+            const tagText = stu.tag ? ` [${stu.tag}]` : '';
+
+            const row = $(`
+                <div class="student-row">
+                    <div>
+                        <input type="checkbox" class="stu-check" data-id="${stu.id}">
+                        <span ${active ? 'style="font-weight:bold;"' : ''}>
+                            ${stu.name}${tagText} (needs ${stu.periodsNeeded}, slots ${totalSlots})
+                        </span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-info small-btn edit-btn"
+                                data-id="${stu.id}">
+                            Edit/Select
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger small-btn del-btn"
+                                data-id="${stu.id}">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `);
+
+            container.append(row);
+        });
+    }
+
+    function renderGroups() {
+        const container = $('#groups-container');
+        container.empty();
+
+        if (groups.length === 0) {
+            container.append('<p class="text-muted">No groups yet.</p>');
+            return;
+        }
+
+        groups.forEach(g => {
+            const row = $(`
+                <div class="student-row">
+                    <span>Group ${g.id}: ${g.names.join(', ')}</span>
+                    <button class="btn btn-sm btn-outline-danger small-btn remove-group"
+                            data-id="${g.id}">
+                        Remove Group
+                    </button>
+                </div>
+            `);
+            container.append(row);
+        });
+    }
+
+    function renderSuggestedGroups() {
+        const container = $('#suggested-groups-container');
+        container.empty();
+
+        if (suggestedGroups.length === 0) {
+            container.append('<p class="text-muted">No suggestions. Try adding availability or clicking "Refresh Suggestions".</p>');
+            return;
+        }
+
+        suggestedGroups.forEach(sg => {
+            const row = $(`
+                <div class="student-row">
+                    <span>${sg.names.join(' & ')} (overlap: ${sg.overlapCount} slots)</span>
+                    <button class="btn btn-sm btn-outline-success small-btn add-suggestion"
+                            data-id="${sg.id}">
+                        Add Group
+                    </button>
+                </div>
+            `);
+            container.append(row);
+        });
+    }
+
+    // --------------------------------------------------
+    // Apply availability to grids
+    // --------------------------------------------------
+    function applyStudentAvailabilityToGrid() {
+        $('.avail-cell').removeClass('cell-selected');
+
+        if (!activeStudentId) return;
+        const stu = getStudentById(activeStudentId);
+        if (!stu) return;
+
+        Object.entries(stu.availability).forEach(([day, slots]) => {
+            slots.forEach(slot => {
+                $(`.avail-cell[data-day="${day}"][data-slot="${slot}"]`)
+                    .addClass('cell-selected');
+            });
+        });
+    }
+
+    function applyTeacherUnavailabilityToGrid() {
+        $('.teacher-cell').removeClass('teacher-unavailable');
+
+        Object.entries(teacherUnavailability).forEach(([day, slots]) => {
+            slots.forEach(slot => {
+                $(`.teacher-cell[data-day="${day}"][data-slot="${slot}"]`)
+                    .addClass('teacher-unavailable');
+            });
+        });
+    }
+
+    // --------------------------------------------------
+    // Add student
+    // --------------------------------------------------
+    $('#student-form').on('submit', function(e) {
+        e.preventDefault();
+
+        const name = $('#student-name').val().trim();
+        const need = parseInt($('#periods-needed').val(), 10);
+        const tag = $('#student-tag').val().trim();
+
+        if (!name || !need || need <= 0) {
+            alert("Enter a valid name and periods.");
+            return;
+        }
+
+        const stu = {
+            id: nextStudentId++,
+            name,
+            periodsNeeded: need,
+            tag,
+            availability: {}
+        };
+
+        students.push(stu);
+        activeStudentId = stu.id;
+
+        $('#student-name').val('');
+        $('#periods-needed').val('');
+        $('#student-tag').val('');
+
+        renderStudents();
+        applyStudentAvailabilityToGrid();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Toggle Edit/Select
+    // --------------------------------------------------
+    $(document).on('click', '.edit-btn', function() {
+        const id = parseInt($(this).data('id'), 10);
+
+        if (activeStudentId === id) {
+            activeStudentId = null; // deselect
+        } else {
+            activeStudentId = id;
+        }
+
+        renderStudents();
+        applyStudentAvailabilityToGrid();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Delete student
+    // --------------------------------------------------
+    $(document).on('click', '.del-btn', function() {
+        const id = parseInt($(this).data('id'), 10);
+        const stu = getStudentById(id);
+        if (!stu) return;
+
+        students = students.filter(s => s.id !== id);
+
+        groups.forEach(g => {
+            g.names = g.names.filter(n => n !== stu.name);
+        });
+        groups = groups.filter(g => g.names.length >= 2);
+
+        if (activeStudentId === id) {
+            activeStudentId = null;
+        }
+
+        renderStudents();
+        renderGroups();
+        renderSuggestedGroups();
+        applyStudentAvailabilityToGrid();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Availability selection helpers (click + drag)
+    // --------------------------------------------------
+    function setCellForActiveStudent(day, slot, shouldSelect, cellEl) {
+        if (!activeStudentId) return;
+        const stu = getStudentById(activeStudentId);
+        if (!stu) return;
+
+        if (!stu.availability[day]) {
+            stu.availability[day] = [];
+        }
+
+        const idx = stu.availability[day].indexOf(slot);
+
+        if (shouldSelect && idx === -1) {
+            stu.availability[day].push(slot);
+            if (cellEl) $(cellEl).addClass('cell-selected');
+        } else if (!shouldSelect && idx !== -1) {
+            stu.availability[day].splice(idx, 1);
+            if (cellEl) $(cellEl).removeClass('cell-selected');
+        }
+    }
+
+    // Single click + drag via mousedown only
+    $(document).on('mousedown', '.avail-cell', function(e) {
+        if (!activeStudentId) {
+            alert("Select a student (Edit/Select) first.");
+            return;
+        }
+
+        isMouseDown = true;
+        const day = $(this).data('day').toString();
+        const slot = $(this).data('slot');
+        const currentlySelected = $(this).hasClass('cell-selected');
+
+        dragMode = currentlySelected ? "remove" : "add";
+        setCellForActiveStudent(day, slot, dragMode === "add", this);
+        renderStudents();
+        saveState();
+
+        e.preventDefault();
+    });
+
+    $(document).on('mouseover', '.avail-cell', function() {
+        if (!isMouseDown || !activeStudentId || !dragMode) return;
+
+        const day = $(this).data('day').toString();
+        const slot = $(this).data('slot');
+        const shouldSelect = (dragMode === "add");
+
+        setCellForActiveStudent(day, slot, shouldSelect, this);
+        renderStudents();
+        saveState();
+    });
+
+    $(document).on('mouseup', function() {
+        isMouseDown = false;
+        dragMode = null;
+    });
+
+    $(document).on('mouseleave', function() {
+        isMouseDown = false;
+        dragMode = null;
+    });
+
+    // --------------------------------------------------
+    // Teacher blackout toggle
+    // --------------------------------------------------
+    $(document).on('click', '.teacher-cell', function() {
+        const day = $(this).data('day').toString();
+        const slot = $(this).data('slot');
+
+        if (!teacherUnavailability[day]) {
+            teacherUnavailability[day] = [];
+        }
+
+        const idx = teacherUnavailability[day].indexOf(slot);
+        if (idx === -1) {
+            teacherUnavailability[day].push(slot);
+            $(this).addClass('teacher-unavailable');
+        } else {
+            teacherUnavailability[day].splice(idx, 1);
+            $(this).removeClass('teacher-unavailable');
+        }
+
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Teacher max per day
+    // --------------------------------------------------
+    $(document).on('input', '.teacher-max-input', function() {
+        const day = $(this).data('day').toString();
+        const val = $(this).val();
+        if (!val) {
+            delete teacherMaxPerDay[day];
+        } else {
+            teacherMaxPerDay[day] = parseInt(val, 10) || 0;
+        }
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Compute common availability (for grouping and suggestions)
+    // --------------------------------------------------
+    function computeCommonAvailabilityForStudents(studentNames) {
+        const selectedStudents = studentNames
+            .map(name => students.find(s => s.name === name))
+            .filter(Boolean);
+
+        if (selectedStudents.length === 0) return {};
+
+        const first = selectedStudents[0].availability || {};
+        let common = {};
+        Object.entries(first).forEach(([day, slots]) => {
+            common[day] = new Set(slots);
+        });
+
+        for (let i = 1; i < selectedStudents.length; i++) {
+            const av = selectedStudents[i].availability || {};
+            const toRemove = [];
+            for (const day in common) {
+                if (av[day]) {
+                    const newSet = new Set();
+                    av[day].forEach(slot => {
+                        if (common[day].has(slot)) newSet.add(slot);
+                    });
+                    if (newSet.size === 0) {
+                        toRemove.push(day);
+                    } else {
+                        common[day] = newSet;
+                    }
+                } else {
+                    toRemove.push(day);
+                }
+            }
+            toRemove.forEach(d => delete common[d]);
+        }
+
+        const result = {};
+        Object.entries(common).forEach(([day, setVal]) => {
+            const arr = Array.from(setVal);
+            if (arr.length > 0) result[day] = arr;
+        });
+
+        return result;
+    }
+
+    // --------------------------------------------------
+    // Group students (manual)
+    // --------------------------------------------------
+    $('#group-students').on('click', function() {
+        const ids = $('.stu-check:checked')
+            .map(function() { return parseInt($(this).data('id'), 10); })
+            .get();
+
+        if (ids.length < 2) {
+            alert("Select at least 2 students to group.");
+            return;
+        }
+
+        if (maxGroupSize && ids.length > maxGroupSize) {
+            alert(`Max group size is ${maxGroupSize}.`);
+            return;
+        }
+
+        const selectedStudents = ids.map(id => getStudentById(id)).filter(Boolean);
+        const names = selectedStudents.map(s => s.name);
+
+        if (enforceSameTag) {
+            const tags = new Set(selectedStudents.map(s => s.tag || ''));
+            if (tags.size > 1) {
+                alert("These students do not share the same tag. Adjust tags or turn off the 'same tag' rule.");
+                return;
+            }
+        }
+
+        const common = computeCommonAvailabilityForStudents(names);
+        const hasOverlap = Object.values(common).some(arr => arr.length > 0);
+
+        if (!hasOverlap) {
+            alert("These students have no overlapping availability. Adjust their schedules or choose different students.");
+            return;
+        }
+
+        groups.push({
+            id: nextGroupId++,
+            names
+        });
+
+        $('.stu-check').prop('checked', false);
+        renderGroups();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Remove group
+    // --------------------------------------------------
+    $(document).on('click', '.remove-group', function() {
+        const id = parseInt($(this).data('id'), 10);
+        groups = groups.filter(g => g.id !== id);
+        renderGroups();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Group rules UI
+    // --------------------------------------------------
+    $('#rule-same-tag').on('change', function() {
+        enforceSameTag = $(this).is(':checked');
+        saveState();
+    });
+
+    $('#rule-max-size').on('input', function() {
+        const val = $(this).val();
+        maxGroupSize = val ? parseInt(val, 10) : null;
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Suggestions
+    // --------------------------------------------------
+    function refreshSuggestedGroups() {
+        suggestedGroups = [];
+        let idCounter = 1;
+
+        for (let i = 0; i < students.length; i++) {
+            for (let j = i + 1; j < students.length; j++) {
+                const s1 = students[i];
+                const s2 = students[j];
+
+                if (enforceSameTag && (s1.tag || '') !== (s2.tag || '')) {
+                    continue;
+                }
+
+                // Check if already in an existing group together
+                const pairSet = new Set([s1.name, s2.name]);
+                const alreadyGrouped = groups.some(g => {
+                    const gset = new Set(g.names);
+                    return pairSet.size === gset.size && [...pairSet].every(n => gset.has(n));
+                });
+                if (alreadyGrouped) continue;
+
+                const common = computeCommonAvailabilityForStudents([s1.name, s2.name]);
+                const overlapCount = Object.values(common)
+                    .reduce((sum, arr) => sum + arr.length, 0);
+
+                if (overlapCount > 0) {
+                    suggestedGroups.push({
+                        id: idCounter++,
+                        names: [s1.name, s2.name],
+                        overlapCount
+                    });
+                }
+            }
+        }
+
+        // Sort by overlap descending
+        suggestedGroups.sort((a, b) => b.overlapCount - a.overlapCount);
+        renderSuggestedGroups();
+    }
+
+    $('#refresh-suggestions').on('click', function() {
+        refreshSuggestedGroups();
+    });
+
+    $(document).on('click', '.add-suggestion', function() {
+        const id = parseInt($(this).data('id'), 10);
+        const sg = suggestedGroups.find(s => s.id === id);
+        if (!sg) return;
+
+        if (maxGroupSize && sg.names.length > maxGroupSize) {
+            alert(`Max group size is ${maxGroupSize}.`);
+            return;
+        }
+
+        groups.push({
+            id: nextGroupId++,
+            names: sg.names.slice()
+        });
+
+        suggestedGroups = suggestedGroups.filter(s => s.id !== id);
+        renderGroups();
+        renderSuggestedGroups();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Save/Load via file
+    // --------------------------------------------------
+    $('#load-file-btn').on('click', function() {
+        $('#file-input').click();
+    });
+
+    $('#file-input').on('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                const obj = JSON.parse(ev.target.result);
+                students = [];
+                groups = [];
+                nextStudentId = 1;
+                nextGroupId = 1;
+                activeStudentId = null;
+                teacherMaxPerDay = {};
+                teacherUnavailability = {};
+                enforceSameTag = false;
+                maxGroupSize = null;
+
+                loadStateFromObject(obj);
+                saveState();
+                alert("Schedule loaded from file.");
+            } catch (err) {
+                console.error(err);
+                alert("Invalid JSON file.");
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    $('#clear-state-btn').on('click', function() {
+        if (!confirm("Clear saved state from this browser? This does not delete downloaded files.")) {
+            return;
+        }
+        localStorage.removeItem('scheduleStateV1');
+        location.reload();
+    });
+
+    // --------------------------------------------------
+    // Generate timetable
+    // --------------------------------------------------
+    $('#generate-timetable').on('click', function() {
+        if (students.length === 0) {
+            alert("Add at least one student first.");
+            return;
+        }
+
+        const campus = getCampus();
+
+        const payload = {
+            campus,
+            students: students.map(s => ({
+                name: s.name,
+                periodsNeeded: s.periodsNeeded,
+                tag: s.tag,
+                availability: s.availability
+            })),
+            groups: groups.map(g => g.names),
+            teacherMaxPerDay,
+            teacherUnavailability,
+            groupRules: {
+                enforceSameTag,
+                maxGroupSize
+            }
+        };
+
+        $.ajax({
+            url: '/generate_timetable',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function(html) {
+                document.open();
+                document.write(html);
+                document.close();
+            },
+            error: function(e) {
+                console.error(e);
+                alert("Error generating timetable.");
+            }
+        });
+    });
+
+    // --------------------------------------------------
+    // Campus change (reset availabilities to avoid mismatched slots)
+    // --------------------------------------------------
+    $('#campus-select').on('change', function() {
+        // Clear all student availability & teacher unavailability when campus changes
+        students.forEach(s => { s.availability = {}; });
+        teacherUnavailability = {};
+        activeStudentId = null;
+        buildAvailabilityTable();
+        buildTeacherGrid();
+        renderStudents();
+        applyTeacherUnavailabilityToGrid();
+        saveState();
+    });
+
+    // --------------------------------------------------
+    // Init
+    // --------------------------------------------------
+    $(function() {
+        loadState();  // builds grids and renders
+    });
+</script>
+
+</body>
+</html>
