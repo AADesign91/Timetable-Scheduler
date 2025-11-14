@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generated Timetable</title>
+
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+
+        .timetable {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .timetable th, .timetable td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .timetable th {
+            background: #007bff;
+            color: white;
+        }
+        .slot-empty { background: #f8f9fa; }
+
+        .slot-color-1 { background: #ffe0e0; }
+        .slot-color-2 { background: #e0f0ff; }
+        .slot-color-3 { background: #e0ffe8; }
+        .slot-color-4 { background: #fff3cd; }
+        .slot-color-5 { background: #f5e0ff; }
+        .slot-color-6 { background: #e0fff9; }
+        .slot-color-7 { background: #f0e0ff; }
+        .slot-color-8 { background: #e0f7ff; }
+
+        @media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1 class="text-center">Generated Timetable</h1>
+    <p class="text-center text-muted">{{ campus_label }}</p>
+
+    <div class="mb-3 no-print">
+        <button class="btn btn-outline-primary" id="btn-print">
+            Print / Save as PDF
+        </button>
+        <button class="btn btn-outline-secondary" id="btn-copy">
+            Copy Timetable as Text
+        </button>
+        <button class="btn btn-outline-info" id="btn-json">
+            Download JSON
+        </button>
+        <button class="btn btn-outline-success" id="btn-csv">
+            Download CSV
+        </button>
+        <a href="/" class="btn btn-secondary">
+            Back to Scheduler
+        </a>
+    </div>
+
+    <table class="timetable">
+        <thead>
+        <tr>
+            <th>Time / Day</th>
+            {% for day in days %}
+                <th>Day {{ day }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for slot in time_slots %}
+            <tr>
+                <td>{{ slot }}</td>
+                {% for day in days %}
+                    {% set dk = 'Day' ~ day %}
+                    {% set label = timetable[dk][slot] %}
+                    {% set cc = group_colors.get(label, 'slot-empty') %}
+                    <td class="{{ cc }}">{{ label }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 class="mt-4">Conflicts</h3>
+    {% if conflicts %}
+        <ul>
+            {% for c in conflicts %}
+                <li>{{ c }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No conflicts. All periods successfully scheduled.</p>
+    {% endif %}
+
+    <h3 class="mt-4">Student Period Summary</h3>
+    <table class="table table-sm table-bordered">
+        <thead>
+        <tr>
+            <th>Student</th>
+            <th>Periods Needed</th>
+            <th>Periods Scheduled</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for name, needed in student_periods.items() %}
+            {% set scheduled = scheduled_counts.get(name, 0) %}
+            {% set diff = needed - scheduled %}
+            <tr>
+                <td>{{ name }}</td>
+                <td>{{ needed }}</td>
+                <td>{{ scheduled }}</td>
+                <td>
+                    {% if diff > 0 %}
+                        <span class="text-danger">Under-scheduled by {{ diff }}</span>
+                    {% elif diff < 0 %}
+                        <span class="text-warning">Over-scheduled by {{ -diff }}</span>
+                    {% else %}
+                        <span class="text-success">OK</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    // timetable_json_str was passed from Flask as a JSON string
+    const timetableData = JSON.parse('{{ timetable_json_str|safe }}');
+
+    // Print / Save as PDF
+    document.getElementById('btn-print').addEventListener('click', () => {
+        window.print();
+    });
+
+    function buildTimetableText(data) {
+        const { campus_label, days, time_slots, timetable, conflicts } = data;
+
+        let lines = [];
+        lines.push(`Timetable – ${campus_label}`);
+        lines.push('');
+
+        days.forEach(day => {
+            const dayKey = 'Day' + day;
+            lines.push(`Day ${day}`);
+            time_slots.forEach(slot => {
+                const label = timetable[dayKey][slot];
+                if (label) {
+                    lines.push(`  ${slot}: ${label}`);
+                }
+            });
+            lines.push('');
+        });
+
+        lines.push('Conflicts:');
+        if (conflicts && conflicts.length > 0) {
+            conflicts.forEach(c => lines.push('  - ' + c));
+        } else {
+            lines.push('  None');
+        }
+
+        return lines.join('\n');
+    }
+
+    // Copy timetable as text
+    document.getElementById('btn-copy').addEventListener('click', async () => {
+        const text = buildTimetableText(timetableData);
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Timetable copied to clipboard.');
+        } catch (err) {
+            console.error(err);
+            alert('Could not copy to clipboard (clipboard API may be blocked here).');
+        }
+    });
+
+    // Download JSON
+    document.getElementById('btn-json').addEventListener('click', () => {
+        const jsonStr = JSON.stringify(timetableData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'timetable.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    });
+
+    // Download CSV
+    document.getElementById('btn-csv').addEventListener('click', () => {
+        const { days, time_slots, timetable } = timetableData;
+        let rows = [];
+        rows.push(['Day', 'Time', 'Students']);
+
+        days.forEach(day => {
+            const dayKey = 'Day' + day;
+            time_slots.forEach(slot => {
+                const label = timetable[dayKey][slot];
+                if (label) {
+                    rows.push([`Day ${day}`, slot, label]);
+                }
+            });
+        });
+
+        const csvStr = rows.map(r => r.map(field => {
+            if (field == null) return '';
+            const s = field.toString();
+            if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        }).join(',')).join('\n');
+
+        const blob = new Blob([csvStr], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'timetable.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    });
+</script>
+
+</body>
+</html>
