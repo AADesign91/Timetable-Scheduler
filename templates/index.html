@@ -73,8 +73,8 @@
             <div class="form-group col-md-4">
                 <label for="campus-select"><strong>Select Campus:</strong></label>
                 <select class="form-control" id="campus-select">
-                    <option value="campus_30">Campus A (30-minute periods, 12–1 lunch)</option>
-                    <option value="campus_40">Campus B (40-minute periods)</option>
+                    <option value="campus_30">Campus A (30-minute periods, 8–16)</option>
+                    <option value="campus_40">Campus B (mixed 30/40-minute periods, 8–17)</option>
                 </select>
             </div>
 
@@ -128,19 +128,28 @@
         <h4>Add Student</h4>
         <form id="student-form" class="mb-3">
             <div class="form-row">
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-3">
                     <label for="student-name">Student Name</label>
                     <input type="text" class="form-control" id="student-name" required>
                 </div>
 
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-3">
                     <label for="periods-needed">Periods Required</label>
                     <input type="number" class="form-control" id="periods-needed" min="1" required>
                 </div>
 
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-3">
                     <label for="student-tag">Tag / Category (optional)</label>
                     <input type="text" class="form-control" id="student-tag" placeholder="e.g., ELL, G3, EF">
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label for="spacing-rule">Spacing Preference</label>
+                    <select class="form-control" id="spacing-rule">
+                        <option value="none">No stipulation (back-to-back OK)</option>
+                        <option value="once_per_day">At most once per day</option>
+                        <option value="every_other_day">Every other day</option>
+                    </select>
                 </div>
             </div>
 
@@ -228,7 +237,7 @@
     // --------------------------------------------------
     // STATE
     // --------------------------------------------------
-    let students = [];    // { id, name, periodsNeeded, tag, availability:{ '1':[slot,...], ... } }
+    let students = [];    // { id, name, periodsNeeded, tag, spacingRule, availability:{ '1':[slot,...], ... } }
     let groups = [];      // { id, names:[...] }
     let nextStudentId = 1;
     let nextGroupId = 1;
@@ -245,16 +254,33 @@
 
     let suggestedGroups = [];  // { id, names:[...], overlapCount }
 
+    // Time slots must match main.py CAMPUS_CONFIGS
     const CAMPUS_TIME_SLOTS = {
         "campus_30": [
-            "08:30–09:00","09:00–09:30","09:30–10:00",
-            "10:00–10:30","10:30–11:00","11:00–11:30",
-            "13:00–13:30","13:30–14:00","14:00–14:30","14:30–15:00"
+            "08:00–08:30", "08:30–09:00",
+            "09:00–09:30", "09:30–10:00",
+            "10:00–10:30", "10:30–11:00",
+            "11:00–11:30", "11:30–12:00",
+            "12:00–12:30", "12:30–13:00",
+            "13:00–13:30", "13:30–14:00",
+            "14:00–14:30", "14:30–15:00",
+            "15:00–15:30", "15:30–16:00",
         ],
         "campus_40": [
-            "08:20–09:00","09:00–09:40","10:00–10:40",
-            "10:40–11:20","12:00–12:40","12:40–13:20",
-            "13:40–14:20","14:20–15:00"
+            "08:00–08:30",
+            "08:30–09:00",
+            "09:00–09:40",
+            "09:40–10:20",
+            "10:20–11:00",
+            "11:00–11:40",
+            "11:40–12:20",
+            "12:20–13:00",
+            "13:00–13:40",
+            "13:40–14:20",
+            "14:20–15:00",
+            "15:00–15:40",
+            "15:40–16:20",
+            "16:20–17:00",
         ]
     };
 
@@ -297,6 +323,7 @@
                 name: s.name,
                 periodsNeeded: s.periodsNeeded,
                 tag: s.tag || "",
+                spacingRule: s.spacingRule || "none",
                 availability: s.availability || {}
             }));
             nextStudentId = students.length + 1;
@@ -400,6 +427,12 @@
     // --------------------------------------------------
     // Render students / groups / suggestions
     // --------------------------------------------------
+    function spacingRuleLabel(rule) {
+        if (rule === "once_per_day") return "once/day";
+        if (rule === "every_other_day") return "every other day";
+        return "no stipulation";
+    }
+
     function renderStudents() {
         const container = $('#students-container');
         container.empty();
@@ -410,13 +443,15 @@
                 .reduce((a, arr) => a + arr.length, 0);
 
             const tagText = stu.tag ? ` [${stu.tag}]` : '';
+            const spacingText = spacingRuleLabel(stu.spacingRule || "none");
 
             const row = $(`
                 <div class="student-row">
                     <div>
                         <input type="checkbox" class="stu-check" data-id="${stu.id}">
                         <span ${active ? 'style="font-weight:bold;"' : ''}>
-                            ${stu.name}${tagText} (needs ${stu.periodsNeeded}, slots ${totalSlots})
+                            ${stu.name}${tagText}
+                            (needs ${stu.periodsNeeded}, slots ${totalSlots}, spacing: ${spacingText})
                         </span>
                     </div>
                     <div>
@@ -520,6 +555,7 @@
         const name = $('#student-name').val().trim();
         const need = parseInt($('#periods-needed').val(), 10);
         const tag = $('#student-tag').val().trim();
+        const spacingRule = $('#spacing-rule').val();
 
         if (!name || !need || need <= 0) {
             alert("Enter a valid name and periods.");
@@ -531,6 +567,7 @@
             name,
             periodsNeeded: need,
             tag,
+            spacingRule,
             availability: {}
         };
 
@@ -540,6 +577,7 @@
         $('#student-name').val('');
         $('#periods-needed').val('');
         $('#student-tag').val('');
+        $('#spacing-rule').val('none');
 
         renderStudents();
         applyStudentAvailabilityToGrid();
@@ -937,6 +975,7 @@
                 name: s.name,
                 periodsNeeded: s.periodsNeeded,
                 tag: s.tag,
+                spacingRule: s.spacingRule || "none",
                 availability: s.availability
             })),
             groups: groups.map(g => g.names),
