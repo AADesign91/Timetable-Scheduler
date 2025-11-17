@@ -4,28 +4,74 @@
     <meta charset="UTF-8">
     <title>Generated Timetable</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
     <style>
-        body { padding: 20px; font-family: Arial, sans-serif; }
+        body {
+            padding: 24px;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top left, #eef2ff 0, #f8fafc 40%, #ffffff 100%);
+            color: #0f172a;
+        }
+
+        .container {
+            max-width: 1100px;
+        }
+
+        h1 {
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-box {
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background-color: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+            padding: 18px 20px;
+            margin-top: 18px;
+            margin-bottom: 18px;
+        }
 
         .timetable {
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             width: 100%;
-            margin-top: 20px;
+            margin-top: 12px;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
         }
-        .timetable th, .timetable td {
-            border: 1px solid #ccc;
-            padding: 8px;
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid #e2e8f0;
+            padding: 6px;
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
+
         .timetable th {
-            background: #007bff;
-            color: white;
+            background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+            color: #ffffff;
+            font-weight: 600;
+            border-color: transparent;
         }
-        .slot-empty { background: #f8f9fa; }
+
+        .timetable tbody tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+
+        .slot-empty {
+            background: #f8fafc;
+        }
 
         .slot-color-1 { background: #ffe0e0; }
         .slot-color-2 { background: #e0f0ff; }
@@ -36,101 +82,141 @@
         .slot-color-7 { background: #f0e0ff; }
         .slot-color-8 { background: #e0f7ff; }
 
+        .btn-primary {
+            background: linear-gradient(90deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 999px;
+            padding-inline: 18px;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.08);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-outline-info,
+        .btn-outline-secondary,
+        .btn-outline-success {
+            border-radius: 999px;
+            font-size: 0.8rem;
+        }
+
         @media print {
-            .no-print { display: none !important; }
+            body {
+                background: #ffffff;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .card-box {
+                box-shadow: none;
+                border-radius: 0;
+                border: none;
+                padding: 0;
+            }
         }
     </style>
 </head>
 <body>
 <div class="container">
 
-    <h1 class="text-center">Generated Timetable</h1>
-    <p class="text-center text-muted">{{ campus_label }}</p>
+    <div class="no-print">
+        <h1 class="text-center">Generated Timetable</h1>
+        <p class="text-center text-muted">{{ campus_label }}</p>
 
-    <div class="mb-3 no-print">
-        <button class="btn btn-outline-primary" id="btn-print">
-            Print / Save as PDF
-        </button>
-        <button class="btn btn-outline-secondary" id="btn-copy">
-            Copy Timetable as Text
-        </button>
-        <button class="btn btn-outline-info" id="btn-json">
-            Download JSON
-        </button>
-        <button class="btn btn-outline-success" id="btn-csv">
-            Download CSV
-        </button>
-        <a href="/" class="btn btn-secondary">
-            Back to Scheduler
-        </a>
+        <div class="mb-3 text-center">
+            <button class="btn btn-outline-primary" id="btn-print">
+                Print / Save as PDF
+            </button>
+            <button class="btn btn-outline-secondary" id="btn-copy">
+                Copy Timetable as Text
+            </button>
+            <button class="btn btn-outline-info" id="btn-json">
+                Download JSON
+            </button>
+            <button class="btn btn-outline-success" id="btn-csv">
+                Download CSV
+            </button>
+            <a href="/" class="btn btn-secondary">
+                Back to Scheduler
+            </a>
+        </div>
     </div>
 
-    <table class="timetable">
-        <thead>
-        <tr>
-            <th>Time / Day</th>
-            {% for day in days %}
-                <th>Day {{ day }}</th>
-            {% endfor %}
-        </tr>
-        </thead>
-        <tbody>
-        {% for slot in time_slots %}
+    <div class="card-box">
+        <h5>Timetable</h5>
+        <table class="timetable">
+            <thead>
             <tr>
-                <td>{{ slot }}</td>
+                <th>Time / Day</th>
                 {% for day in days %}
-                    {% set dk = 'Day' ~ day %}
-                    {% set label = timetable[dk][slot] %}
-                    {% set cc = group_colors.get(label, 'slot-empty') %}
-                    <td class="{{ cc }}">{{ label }}</td>
+                    <th>Day {{ day }}</th>
                 {% endfor %}
             </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-
-    <h3 class="mt-4">Conflicts</h3>
-    {% if conflicts %}
-        <ul>
-            {% for c in conflicts %}
-                <li>{{ c }}</li>
+            </thead>
+            <tbody>
+            {% for slot in time_slots %}
+                <tr>
+                    <td>{{ slot }}</td>
+                    {% for day in days %}
+                        {% set dk = 'Day' ~ day %}
+                        {% set label = timetable[dk][slot] %}
+                        {% set cc = group_colors.get(label, 'slot-empty') %}
+                        <td class="{{ cc }}">{{ label }}</td>
+                    {% endfor %}
+                </tr>
             {% endfor %}
-        </ul>
-    {% else %}
-        <p>No conflicts. All periods successfully scheduled.</p>
-    {% endif %}
+            </tbody>
+        </table>
+    </div>
 
-    <h3 class="mt-4">Student Period Summary</h3>
-    <table class="table table-sm table-bordered">
-        <thead>
-        <tr>
-            <th>Student</th>
-            <th>Periods Needed</th>
-            <th>Periods Scheduled</th>
-            <th>Status</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for name, needed in student_periods.items() %}
-            {% set scheduled = scheduled_counts.get(name, 0) %}
-            {% set diff = needed - scheduled %}
+    <div class="card-box">
+        <h5>Conflicts</h5>
+        {% if conflicts %}
+            <ul>
+                {% for c in conflicts %}
+                    <li>{{ c }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No conflicts. All periods successfully scheduled.</p>
+        {% endif %}
+    </div>
+
+    <div class="card-box">
+        <h5>Student Period Summary</h5>
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
             <tr>
-                <td>{{ name }}</td>
-                <td>{{ needed }}</td>
-                <td>{{ scheduled }}</td>
-                <td>
-                    {% if diff > 0 %}
-                        <span class="text-danger">Under-scheduled by {{ diff }}</span>
-                    {% elif diff < 0 %}
-                        <span class="text-warning">Over-scheduled by {{ -diff }}</span>
-                    {% else %}
-                        <span class="text-success">OK</span>
-                    {% endif %}
-                </td>
+                <th>Student</th>
+                <th>Periods Needed</th>
+                <th>Periods Scheduled</th>
+                <th>Status</th>
             </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+            {% for name, needed in student_periods.items() %}
+                {% set scheduled = scheduled_counts.get(name, 0) %}
+                {% set diff = needed - scheduled %}
+                <tr>
+                    <td>{{ name }}</td>
+                    <td>{{ needed }}</td>
+                    <td>{{ scheduled }}</td>
+                    <td>
+                        {% if diff > 0 %}
+                            <span class="text-danger">Under-scheduled by {{ diff }}</span>
+                        {% elif diff < 0 %}
+                            <span class="text-warning">Over-scheduled by {{ -diff }}</span>
+                        {% else %}
+                            <span class="text-success">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
 </div>
 
