@@ -21,20 +21,20 @@ CAMPUS_CONFIGS = {
         ],
     },
     "campus_40": {
-        "label": "Campus B (mixed 30/40-minute periods, 8:00–17:00)",
+        "label": "Campus B (mixed 30/40-minute periods, with recess blocks)",
         "time_slots": [
             "08:00–08:30",
             "08:30–09:00",
-            # 40-min from 9:00 until 17:00
+            # 40-minute periods from 9:00, skipping 10:20–10:40 (recess)
             "09:00–09:40",
             "09:40–10:20",
-            "10:20–11:00",
-            "11:00–11:40",
-            "11:40–12:20",
-            "12:20–13:00",
-            "13:00–13:40",
-            "13:40–14:20",
-            "14:20–15:00",
+            "10:40–11:20",
+            "11:20–12:00",
+            "12:00–12:40",
+            "12:40–13:20",
+            # Afternoon with recess 14:00–14:20 skipped:
+            "13:20–14:00",   # 1:20–2:00
+            "14:20–15:00",   # 2:20–3:00
             "15:00–15:40",
             "15:40–16:20",
             "16:20–17:00",
@@ -180,7 +180,7 @@ def generate_timetable():
         if needed <= 0:
             continue
 
-        # Assign a color
+        # Assign a color to this group label
         if label not in group_colors:
             group_colors[label] = color_classes[color_index % len(color_classes)]
             color_index += 1
