@@ -74,7 +74,7 @@
                 <label for="campus-select"><strong>Select Campus:</strong></label>
                 <select class="form-control" id="campus-select">
                     <option value="campus_30">Campus A (30-minute periods, 8–16)</option>
-                    <option value="campus_40">Campus B (mixed 30/40-minute periods, 8–17)</option>
+                    <option value="campus_40">Campus B (mixed 30/40-minute periods, with recess)</option>
                 </select>
             </div>
 
@@ -271,13 +271,12 @@
             "08:30–09:00",
             "09:00–09:40",
             "09:40–10:20",
-            "10:20–11:00",
-            "11:00–11:40",
-            "11:40–12:20",
-            "12:20–13:00",
-            "13:00–13:40",
-            "13:40–14:20",
-            "14:20–15:00",
+            "10:40–11:20",
+            "11:20–12:00",
+            "12:00–12:40",
+            "12:40–13:20",
+            "13:20–14:00",   // 1:20–2:00
+            "14:20–15:00",   // 2:20–3:00
             "15:00–15:40",
             "15:40–16:20",
             "16:20–17:00",
@@ -650,7 +649,6 @@
         }
     }
 
-    // Single click + drag via mousedown only
     $(document).on('mousedown', '.avail-cell', function(e) {
         if (!activeStudentId) {
             alert("Select a student (Edit/Select) first.");
@@ -862,7 +860,6 @@
                     continue;
                 }
 
-                // Check if already in an existing group together
                 const pairSet = new Set([s1.name, s2.name]);
                 const alreadyGrouped = groups.some(g => {
                     const gset = new Set(g.names);
@@ -884,7 +881,6 @@
             }
         }
 
-        // Sort by overlap descending
         suggestedGroups.sort((a, b) => b.overlapCount - a.overlapCount);
         renderSuggestedGroups();
     }
@@ -1005,7 +1001,7 @@
     });
 
     // --------------------------------------------------
-    // Campus change (reset availabilities to avoid mismatched slots)
+    // Campus change
     // --------------------------------------------------
     $('#campus-select').on('change', function() {
         // Clear all student availability & teacher unavailability when campus changes
@@ -1023,7 +1019,7 @@
     // Init
     // --------------------------------------------------
     $(function() {
-        loadState();  // builds grids and renders
+        loadState();
     });
 </script>
 
