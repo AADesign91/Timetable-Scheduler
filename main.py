@@ -4,35 +4,40 @@ from flask import Flask, render_template, request
 app = Flask(__name__)
 
 # ---------------------------------------------------------------------
-# CAMPUS CONFIGS (edit timeslots here if needed)
+# CAMPUS CONFIGS (time slots)
 # ---------------------------------------------------------------------
 CAMPUS_CONFIGS = {
     "campus_30": {
-        "label": "Campus A (30-minute periods, 12–1 lunch)",
+        "label": "Campus A (30-minute periods, 8:00–16:00)",
         "time_slots": [
-            "08:30–09:00",
-            "09:00–09:30",
-            "09:30–10:00",
-            "10:00–10:30",
-            "10:30–11:00",
-            "11:00–11:30",
-            "13:00–13:30",
-            "13:30–14:00",
-            "14:00–14:30",
-            "14:30–15:00",
+            "08:00–08:30", "08:30–09:00",
+            "09:00–09:30", "09:30–10:00",
+            "10:00–10:30", "10:30–11:00",
+            "11:00–11:30", "11:30–12:00",
+            "12:00–12:30", "12:30–13:00",
+            "13:00–13:30", "13:30–14:00",
+            "14:00–14:30", "14:30–15:00",
+            "15:00–15:30", "15:30–16:00",
         ],
     },
     "campus_40": {
-        "label": "Campus B (40-minute periods)",
+        "label": "Campus B (mixed 30/40-minute periods, 8:00–17:00)",
         "time_slots": [
-            "08:20–09:00",
+            "08:00–08:30",
+            "08:30–09:00",
+            # 40-min from 9:00 until 17:00
             "09:00–09:40",
-            "10:00–10:40",
-            "10:40–11:20",
-            "12:00–12:40",
-            "12:40–13:20",
+            "09:40–10:20",
+            "10:20–11:00",
+            "11:00–11:40",
+            "11:40–12:20",
+            "12:20–13:00",
+            "13:00–13:40",
             "13:40–14:20",
             "14:20–15:00",
+            "15:00–15:40",
+            "15:40–16:20",
+            "16:20–17:00",
         ],
     },
 }
@@ -107,6 +112,7 @@ def generate_timetable():
 
         periods_needed = int(s.get("periodsNeeded", 0) or 0)
         availability = s.get("availability", {})
+        spacing_rule = s.get("spacingRule", "none") or "none"
 
         normalized = {}
         for day, slots in availability.items():
@@ -116,6 +122,7 @@ def generate_timetable():
             "name": name,
             "periods_needed": periods_needed,
             "availability": normalized,
+            "spacing_rule": spacing_rule,
         }
 
     conflicts = []
@@ -152,6 +159,12 @@ def generate_timetable():
     # Track total teacher load per day (all groups combined)
     day_load = {str(d): 0 for d in range(1, 7)}
 
+    # Track per-student sessions per day (for spacing rules)
+    student_day_counts = {
+        name: {str(d): 0 for d in range(1, 7)}
+        for name in name_to_student.keys()
+    }
+
     # Color classes per group label
     color_classes = [
         "slot-color-1", "slot-color-2", "slot-color-3", "slot-color-4",
@@ -178,7 +191,7 @@ def generate_timetable():
         for d in range(1, 7):
             day_key = str(d)
             tk = f"Day{d}"
-            allowed = common.get(day_key, [])
+            allowed_slots = common.get(day_key, [])
             max_for_day = teacher_max.get(day_key)
             try:
                 max_for_day = int(max_for_day) if max_for_day not in (None, "", 0) else None
@@ -186,22 +199,63 @@ def generate_timetable():
                 max_for_day = None
 
             for slot in time_slots:
-                # skip if teacher unavailable
+                if scheduled >= needed:
+                    break
+
+                # Only consider slots that are in group's common availability
+                if slot not in allowed_slots:
+                    continue
+
+                # Skip if teacher unavailable
                 if slot in teacher_unavail.get(day_key, []):
                     continue
 
-                # respect teacher daily max
+                # Respect teacher daily max
                 if max_for_day is not None and day_load[day_key] >= max_for_day:
                     continue
 
-                if (
-                    scheduled < needed
-                    and slot in allowed
-                    and timetable[tk][slot] == ""
-                ):
+                # Spacing rules: check each student in the group
+                spacing_ok = True
+                for stu in group:
+                    name = stu["name"]
+                    rule = stu.get("spacing_rule", "none") or "none"
+                    day_counts = student_day_counts.get(name, {})
+
+                    # once per day: at most 1 session on this day
+                    if rule == "once_per_day":
+                        if day_counts.get(day_key, 0) >= 1:
+                            spacing_ok = False
+                            break
+
+                    # every other day:
+                    # - at most 1 on this day
+                    # - must not have sessions on previous or next day
+                    elif rule == "every_other_day":
+                        if day_counts.get(day_key, 0) >= 1:
+                            spacing_ok = False
+                            break
+                        prev_day = str(d - 1) if d > 1 else None
+                        next_day = str(d + 1) if d < 6 else None
+                        if prev_day and day_counts.get(prev_day, 0) >= 1:
+                            spacing_ok = False
+                            break
+                        if next_day and day_counts.get(next_day, 0) >= 1:
+                            spacing_ok = False
+                            break
+
+                if not spacing_ok:
+                    continue
+
+                # Place the group
+                if timetable[tk][slot] == "":
                     timetable[tk][slot] = label
                     scheduled += 1
                     day_load[day_key] += 1
+
+                    # Update student day counts
+                    for stu in group:
+                        name = stu["name"]
+                        student_day_counts[name][day_key] = student_day_counts[name].get(day_key, 0) + 1
 
             if scheduled >= needed:
                 break
@@ -214,15 +268,15 @@ def generate_timetable():
 
     days = [1, 2, 3, 4, 5, 6]
 
-    # Compute scheduled counts per student
+    # Compute scheduled counts per student (total slots across timetable)
     scheduled_counts = {name: 0 for name in name_to_student.keys()}
     for d in days:
         dk = f"Day{d}"
         for slot in time_slots:
-            label = timetable[dk][slot]
-            if not label:
+            lbl = timetable[dk][slot]
+            if not lbl:
                 continue
-            names = [n.strip() for n in label.split(",")]
+            names = [n.strip() for n in lbl.split(",")]
             for n in names:
                 if n in scheduled_counts:
                     scheduled_counts[n] += 1
