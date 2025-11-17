@@ -135,10 +135,8 @@
 </div>
 
 <script>
-    // timetable_json_str was passed from Flask as a JSON string
     const timetableData = JSON.parse('{{ timetable_json_str|safe }}');
 
-    // Print / Save as PDF
     document.getElementById('btn-print').addEventListener('click', () => {
         window.print();
     });
@@ -172,7 +170,6 @@
         return lines.join('\n');
     }
 
-    // Copy timetable as text
     document.getElementById('btn-copy').addEventListener('click', async () => {
         const text = buildTimetableText(timetableData);
         try {
@@ -184,7 +181,6 @@
         }
     });
 
-    // Download JSON
     document.getElementById('btn-json').addEventListener('click', () => {
         const jsonStr = JSON.stringify(timetableData, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -199,7 +195,6 @@
         URL.revokeObjectURL(url);
     });
 
-    // Download CSV
     document.getElementById('btn-csv').addEventListener('click', () => {
         const { days, time_slots, timetable } = timetableData;
         let rows = [];
