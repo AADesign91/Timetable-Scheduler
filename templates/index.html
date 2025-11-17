@@ -4,60 +4,216 @@
     <meta charset="UTF-8">
     <title>Schedule Optimizer</title>
 
+    <!-- Fonts & Bootstrap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script
         src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
     <style>
+        /* Global */
         body {
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            padding: 24px;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top left, #eef2ff 0, #f8fafc 40%, #ffffff 100%);
+            color: #0f172a;
         }
+
+        h1 {
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            margin-bottom: 2rem;
+        }
+
+        h4 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .container {
+            max-width: 1100px;
+        }
+
+        /* Card-like sections */
+        .section-box {
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            background-color: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+        }
+
+        .section-box h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-box h4::before {
+            content: "";
+            width: 5px;
+            height: 20px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #3b82f6, #22c55e);
+        }
+
+        /* Timetables */
         .timetable {
-            margin: 20px 0;
-            border-collapse: collapse;
+            margin: 12px 0;
+            border-collapse: separate;
+            border-spacing: 0;
             width: 100%;
-            user-select: none;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
         }
-        .timetable th, .timetable td {
-            border: 1px solid #ddd;
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid #e2e8f0;
             padding: 6px;
             text-align: center;
-            cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
+
         .timetable th {
-            background-color: #007bff;
-            color: white;
-            cursor: default;
+            background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+            color: #ffffff;
+            font-weight: 600;
+            border-color: transparent;
         }
-        .cell-selected {
-            background-color: #28a745 !important;
-            color: white !important;
+
+        .timetable tbody tr:nth-child(even) td {
+            background-color: #f8fafc;
         }
+
+        .timetable tbody tr:hover td {
+            background-color: #eff6ff;
+        }
+
+        .avail-cell,
         .teacher-cell {
             cursor: pointer;
+            transition: background-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
         }
+
+        .cell-selected {
+            background: #22c55e !important;
+            color: #ffffff !important;
+            box-shadow: inset 0 0 0 1px rgba(21, 128, 61, 0.6);
+        }
+
         .teacher-unavailable {
-            background-color: #dc3545 !important;
-            color: #fff !important;
+            background: #ef4444 !important;
+            color: #ffffff !important;
+            box-shadow: inset 0 0 0 1px rgba(127, 29, 29, 0.6);
         }
+
+        /* Student list & groups */
         .student-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            background-color: #f8fafc;
+            border: 1px solid transparent;
+            transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
         }
+
+        .student-row:hover {
+            background-color: #e5f0ff;
+            border-color: #bfdbfe;
+            transform: translateY(-1px);
+        }
+
+        .student-row span {
+            font-size: 0.86rem;
+        }
+
+        .badge-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            margin-left: 4px;
+        }
+
+        .badge-spacing {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background-color: #fef3c7;
+            color: #92400e;
+            margin-left: 4px;
+        }
+
         .small-btn {
-            padding: 2px 6px;
-            font-size: 0.75rem;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            border-radius: 999px;
         }
-        .section-box {
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 15px;
+
+        .stu-check {
+            margin-right: 6px;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(90deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 999px;
+            padding-inline: 18px;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.08);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-outline-info,
+        .btn-outline-danger,
+        .btn-outline-secondary,
+        .btn-outline-success,
+        .btn-outline-primary {
+            border-radius: 999px;
+            font-size: 0.8rem;
+        }
+
+        /* Labels & helper text */
+        label {
+            font-size: 0.83rem;
+            font-weight: 500;
+            color: #0f172a;
+        }
+
+        .text-muted {
+            font-size: 0.8rem;
+        }
+
+        /* Make grids scrollable on small screens */
+        @media (max-width: 768px) {
+            .timetable {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
@@ -275,8 +431,8 @@
             "11:20–12:00",
             "12:00–12:40",
             "12:40–13:20",
-            "13:20–14:00",   // 1:20–2:00
-            "14:20–15:00",   // 2:20–3:00
+            "13:20–14:00",
+            "14:20–15:00",
             "15:00–15:40",
             "15:40–16:20",
             "16:20–17:00",
@@ -441,16 +597,26 @@
             const totalSlots = Object.values(stu.availability)
                 .reduce((a, arr) => a + arr.length, 0);
 
-            const tagText = stu.tag ? ` [${stu.tag}]` : '';
             const spacingText = spacingRuleLabel(stu.spacingRule || "none");
+
+            let chips = "";
+            if (stu.tag) {
+                chips += `<span class="badge-tag">${stu.tag}</span>`;
+            }
+            if (stu.spacingRule && stu.spacingRule !== "none") {
+                chips += `<span class="badge-spacing">${spacingText}</span>`;
+            }
 
             const row = $(`
                 <div class="student-row">
                     <div>
                         <input type="checkbox" class="stu-check" data-id="${stu.id}">
                         <span ${active ? 'style="font-weight:bold;"' : ''}>
-                            ${stu.name}${tagText}
-                            (needs ${stu.periodsNeeded}, slots ${totalSlots}, spacing: ${spacingText})
+                            ${stu.name}
+                            ${chips}
+                            <span style="margin-left:4px; font-size:0.75rem; color:#64748b;">
+                                · needs ${stu.periodsNeeded}, slots ${totalSlots}
+                            </span>
                         </span>
                     </div>
                     <div>
