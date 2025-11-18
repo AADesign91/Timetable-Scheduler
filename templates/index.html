@@ -73,6 +73,7 @@
             background: #ffffff;
             border-radius: 12px;
             overflow: hidden;
+            table-layout: fixed; /* ensures day columns stay equal width */
         }
 
         .timetable th,
@@ -133,6 +134,12 @@
             background-color: #e5f0ff;
             border-color: #bfdbfe;
             transform: translateY(-1px);
+        }
+
+        .student-row-active {
+            border-color: #2563eb;
+            background-color: #dbeafe;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
         }
 
         .student-row span {
@@ -222,7 +229,7 @@
 
     <h1 class="text-center mb-4">Schedule Optimizer</h1>
 
-    <!-- Campus selection -->
+    <!-- Campus & Teacher Settings -->
     <div class="section-box">
         <h4>Campus & Teacher Settings</h4>
         <div class="form-row">
@@ -279,7 +286,7 @@
         </table>
     </div>
 
-    <!-- Add student -->
+    <!-- Add Student -->
     <div class="section-box">
         <h4>Add Student</h4>
         <form id="student-form" class="mb-3">
@@ -319,7 +326,7 @@
         </form>
     </div>
 
-    <!-- Availability grid -->
+    <!-- Student Availability Grid -->
     <div class="section-box">
         <h4>Student Availability Grid</h4>
         <table class="timetable" id="availability-table">
@@ -340,7 +347,7 @@
         <div id="students-container"></div>
     </div>
 
-    <!-- Groups & rules -->
+    <!-- Groups & Rules -->
     <div class="section-box">
         <h4>Groups & Grouping Rules</h4>
 
@@ -379,7 +386,7 @@
         <input type="file" id="file-input" accept="application/json" style="display:none;">
     </div>
 
-    <!-- Generate timetable -->
+    <!-- Generate Timetable -->
     <div class="section-box">
         <h4>Generate Timetable</h4>
         <button id="generate-timetable" class="btn btn-primary">
@@ -459,7 +466,7 @@
             }
         };
         try {
-            localStorage.setItem('scheduleStateV1', JSON.stringify(state));
+            localStorage.setItem('scheduleStateV2', JSON.stringify(state));
         } catch (e) {
             console.warn("Could not save state", e);
         }
@@ -520,7 +527,7 @@
     }
 
     function loadState() {
-        const raw = localStorage.getItem('scheduleStateV1');
+        const raw = localStorage.getItem('scheduleStateV2');
         if (!raw) {
             buildAvailabilityTable();
             buildTeacherGrid();
@@ -608,7 +615,7 @@
             }
 
             const row = $(`
-                <div class="student-row">
+                <div class="student-row ${active ? 'student-row-active' : ''}">
                     <div>
                         <input type="checkbox" class="stu-check" data-id="${stu.id}">
                         <span ${active ? 'style="font-weight:bold;"' : ''}>
@@ -894,7 +901,7 @@
     });
 
     // --------------------------------------------------
-    // Compute common availability (for grouping and suggestions)
+    // Common availability (for grouping)
     // --------------------------------------------------
     function computeCommonAvailabilityForStudents(studentNames) {
         const selectedStudents = studentNames
@@ -1116,7 +1123,7 @@
         if (!confirm("Clear saved state from this browser? This does not delete downloaded files.")) {
             return;
         }
-        localStorage.removeItem('scheduleStateV1');
+        localStorage.removeItem('scheduleStateV2');
         location.reload();
     });
 
