@@ -48,6 +48,7 @@
             background: #ffffff;
             border-radius: 12px;
             overflow: hidden;
+            table-layout: fixed; /* keep all day columns same width */
         }
 
         .timetable th,
@@ -56,6 +57,7 @@
             padding: 6px;
             text-align: center;
             font-size: 0.82rem;
+            word-wrap: break-word;
         }
 
         .timetable th {
@@ -100,6 +102,22 @@
         .btn-outline-success {
             border-radius: 999px;
             font-size: 0.8rem;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 10px;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .legend-swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            margin-right: 6px;
         }
 
         @media print {
@@ -162,13 +180,32 @@
                     {% for day in days %}
                         {% set dk = 'Day' ~ day %}
                         {% set label = timetable[dk][slot] %}
-                        {% set cc = group_colors.get(label, 'slot-empty') %}
+                        {% if label %}
+                            {% set first_name = label.split(',')[0].strip() %}
+                            {% set cc = student_colors.get(first_name, 'slot-empty') %}
+                        {% else %}
+                            {% set cc = 'slot-empty' %}
+                        {% endif %}
                         <td class="{{ cc }}">{{ label }}</td>
                     {% endfor %}
                 </tr>
             {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <div class="card-box">
+        <h5>Colour Legend (by Student)</h5>
+        {% if student_colors %}
+            {% for name, css_class in student_colors.items() %}
+                <div class="legend-item">
+                    <div class="legend-swatch {{ css_class }}"></div>
+                    <span>{{ name }}</span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">No students found.</p>
+        {% endif %}
     </div>
 
     <div class="card-box">
