@@ -25,14 +25,12 @@ CAMPUS_CONFIGS = {
         "time_slots": [
             "08:00–08:30",
             "08:30–09:00",
-            # 40-minute periods from 9:00, skipping 10:20–10:40 (recess)
             "09:00–09:40",
             "09:40–10:20",
             "10:40–11:20",
             "11:20–12:00",
             "12:00–12:40",
             "12:40–13:20",
-            # Afternoon with recess 14:00–14:20 skipped:
             "13:20–14:00",   # 1:20–2:00
             "14:20–15:00",   # 2:20–3:00
             "15:00–15:40",
@@ -165,13 +163,16 @@ def generate_timetable():
         for name in name_to_student.keys()
     }
 
-    # Color classes per group label
+    # Colour classes per student
     color_classes = [
         "slot-color-1", "slot-color-2", "slot-color-3", "slot-color-4",
         "slot-color-5", "slot-color-6", "slot-color-7", "slot-color-8"
     ]
-    group_colors = {}
+    student_colors = {}
     color_index = 0
+    for name in sorted(name_to_student.keys()):
+        student_colors[name] = color_classes[color_index % len(color_classes)]
+        color_index += 1
 
     # Scheduling
     for group in groups:
@@ -179,11 +180,6 @@ def generate_timetable():
         needed = max(s["periods_needed"] for s in group)
         if needed <= 0:
             continue
-
-        # Assign a color to this group label
-        if label not in group_colors:
-            group_colors[label] = color_classes[color_index % len(color_classes)]
-            color_index += 1
 
         common = find_common_availability(group)
         scheduled = 0
@@ -308,7 +304,7 @@ def generate_timetable():
         days=days,
         timetable=timetable,
         conflicts=conflicts,
-        group_colors=group_colors,
+        student_colors=student_colors,
         scheduled_counts=scheduled_counts,
         student_periods=student_periods,
         timetable_json_str=timetable_json_str,
