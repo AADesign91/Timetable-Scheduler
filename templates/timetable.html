@@ -1,359 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Generated Timetable</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet"
-          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
-    <style>
-        body {
-            padding: 24px;
-            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at top left, #eef2ff 0, #f8fafc 40%, #ffffff 100%);
-            color: #0f172a;
-        }
-
-        .container {
-            max-width: 1100px;
-        }
-
-        h1 {
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            margin-bottom: 0.5rem;
-        }
-
-        .card-box {
-            border-radius: 18px;
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            background-color: rgba(255, 255, 255, 0.96);
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
-            padding: 18px 20px;
-            margin-top: 18px;
-            margin-bottom: 18px;
-        }
-
-        .timetable {
-            border-collapse: separate;
-            border-spacing: 0;
-            width: 100%;
-            margin-top: 12px;
-            background: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            table-layout: fixed; /* keep all day columns same width */
-        }
-
-        .timetable th,
-        .timetable td {
-            border: 1px solid #e2e8f0;
-            padding: 6px;
-            text-align: center;
-            font-size: 0.82rem;
-            word-wrap: break-word;
-        }
-
-        .timetable th {
-            background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
-            color: #ffffff;
-            font-weight: 600;
-            border-color: transparent;
-        }
-
-        .timetable tbody tr:nth-child(even) td {
-            background-color: #f8fafc;
-        }
-
-        .slot-empty {
-            background: #f8fafc;
-        }
-
-        .slot-color-1 { background: #ffe0e0; }
-        .slot-color-2 { background: #e0f0ff; }
-        .slot-color-3 { background: #e0ffe8; }
-        .slot-color-4 { background: #fff3cd; }
-        .slot-color-5 { background: #f5e0ff; }
-        .slot-color-6 { background: #e0fff9; }
-        .slot-color-7 { background: #f0e0ff; }
-        .slot-color-8 { background: #e0f7ff; }
-
-        .btn-primary {
-            background: linear-gradient(90deg, #2563eb, #1d4ed8);
-            border: none;
-            border-radius: 999px;
-            padding-inline: 18px;
-            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.08);
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
-        }
-
-        .btn-outline-info,
-        .btn-outline-secondary,
-        .btn-outline-success {
-            border-radius: 999px;
-            font-size: 0.8rem;
-        }
-
-        .legend-item {
-            display: inline-flex;
-            align-items: center;
-            margin-right: 10px;
-            margin-bottom: 6px;
-            font-size: 0.8rem;
-        }
-
-        .legend-swatch {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-            border: 1px solid #cbd5e1;
-            margin-right: 6px;
-        }
-
-        @media print {
-            body {
-                background: #ffffff;
-            }
-            .no-print {
-                display: none !important;
-            }
-            .card-box {
-                box-shadow: none;
-                border-radius: 0;
-                border: none;
-                padding: 0;
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-
-    <div class="no-print">
-        <h1 class="text-center">Generated Timetable</h1>
-        <p class="text-center text-muted">{{ campus_label }}</p>
-
-        <div class="mb-3 text-center">
-            <button class="btn btn-outline-primary" id="btn-print">
-                Print / Save as PDF
-            </button>
-            <button class="btn btn-outline-secondary" id="btn-copy">
-                Copy Timetable as Text
-            </button>
-            <button class="btn btn-outline-info" id="btn-json">
-                Download JSON
-            </button>
-            <button class="btn btn-outline-success" id="btn-csv">
-                Download CSV
-            </button>
-            <a href="/" class="btn btn-secondary">
-                Back to Scheduler
-            </a>
-        </div>
-    </div>
-
-    <div class="card-box">
-        <h5>Timetable</h5>
-        <table class="timetable">
-            <thead>
-            <tr>
-                <th>Time / Day</th>
-                {% for day in days %}
-                    <th>Day {{ day }}</th>
-                {% endfor %}
-            </tr>
-            </thead>
-            <tbody>
-            {% for slot in time_slots %}
-                <tr>
-                    <td>{{ slot }}</td>
-                    {% for day in days %}
-                        {% set dk = 'Day' ~ day %}
-                        {% set label = timetable[dk][slot] %}
-                        {% if label %}
-                            {% set first_name = label.split(',')[0].strip() %}
-                            {% set cc = student_colors.get(first_name, 'slot-empty') %}
-                        {% else %}
-                            {% set cc = 'slot-empty' %}
-                        {% endif %}
-                        <td class="{{ cc }}">{{ label }}</td>
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="card-box">
-        <h5>Colour Legend (by Student)</h5>
-        {% if student_colors %}
-            {% for name, css_class in student_colors.items() %}
-                <div class="legend-item">
-                    <div class="legend-swatch {{ css_class }}"></div>
-                    <span>{{ name }}</span>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="text-muted">No students found.</p>
-        {% endif %}
-    </div>
-
-    <div class="card-box">
-        <h5>Conflicts</h5>
-        {% if conflicts %}
-            <ul>
-                {% for c in conflicts %}
-                    <li>{{ c }}</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>No conflicts. All periods successfully scheduled.</p>
-        {% endif %}
-    </div>
-
-    <div class="card-box">
-        <h5>Student Period Summary</h5>
-        <table class="table table-sm table-bordered">
-            <thead class="thead-light">
-            <tr>
-                <th>Student</th>
-                <th>Periods Needed</th>
-                <th>Periods Scheduled</th>
-                <th>Status</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for name, needed in student_periods.items() %}
-                {% set scheduled = scheduled_counts.get(name, 0) %}
-                {% set diff = needed - scheduled %}
-                <tr>
-                    <td>{{ name }}</td>
-                    <td>{{ needed }}</td>
-                    <td>{{ scheduled }}</td>
-                    <td>
-                        {% if diff > 0 %}
-                            <span class="text-danger">Under-scheduled by {{ diff }}</span>
-                        {% elif diff < 0 %}
-                            <span class="text-warning">Over-scheduled by {{ -diff }}</span>
-                        {% else %}
-                            <span class="text-success">OK</span>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-</div>
-
-<script>
-    const timetableData = JSON.parse('{{ timetable_json_str|safe }}');
-
-    document.getElementById('btn-print').addEventListener('click', () => {
-        window.print();
-    });
-
-    function buildTimetableText(data) {
-        const { campus_label, days, time_slots, timetable, conflicts } = data;
-
-        let lines = [];
-        lines.push(`Timetable – ${campus_label}`);
-        lines.push('');
-
-        days.forEach(day => {
-            const dayKey = 'Day' + day;
-            lines.push(`Day ${day}`);
-            time_slots.forEach(slot => {
-                const label = timetable[dayKey][slot];
-                if (label) {
-                    lines.push(`  ${slot}: ${label}`);
-                }
-            });
-            lines.push('');
-        });
-
-        lines.push('Conflicts:');
-        if (conflicts && conflicts.length > 0) {
-            conflicts.forEach(c => lines.push('  - ' + c));
-        } else {
-            lines.push('  None');
-        }
-
-        return lines.join('\n');
+  <meta charset="UTF-8" />
+  <title>Generated Timetable</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+  />
+  <style>
+    body {
+      background: #f1f5f9;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 20px;
     }
 
-    document.getElementById('btn-copy').addEventListener('click', async () => {
-        const text = buildTimetableText(timetableData);
-        try {
-            await navigator.clipboard.writeText(text);
-            alert('Timetable copied to clipboard.');
-        } catch (err) {
-            console.error(err);
-            alert('Could not copy to clipboard (clipboard API may be blocked here).');
-        }
-    });
+    .app-card {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
 
-    document.getElementById('btn-json').addEventListener('click', () => {
-        const jsonStr = JSON.stringify(timetableData, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+    .timetable-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'timetable.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    });
+    .timetable-table th,
+    .timetable-table td {
+      border: 1px solid #e2e8f0;
+      padding: 4px;
+      text-align: center;
+      min-width: 70px;
+    }
 
-    document.getElementById('btn-csv').addEventListener('click', () => {
-        const { days, time_slots, timetable } = timetableData;
-        let rows = [];
-        rows.push(['Day', 'Time', 'Students']);
+    .timetable-table th {
+      background: #e0ebff;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
 
-        days.forEach(day => {
-            const dayKey = 'Day' + day;
-            time_slots.forEach(slot => {
-                const label = timetable[dayKey][slot];
-                if (label) {
-                    rows.push([`Day ${day}`, slot, label]);
-                }
-            });
-        });
+    .time-col {
+      background: #f8fafc;
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
 
-        const csvStr = rows.map(r => r.map(field => {
-            if (field == null) return '';
-            const s = field.toString();
-            if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-                return '"' + s.replace(/"/g, '""') + '"';
-            }
-            return s;
-        }).join(',')).join('\n');
+    .slot-empty {
+      background: #f8fafc;
+      color: #94a3b8;
+    }
 
-        const blob = new Blob([csvStr], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
+    .slot {
+      border-radius: 10px;
+      padding: 2px 4px;
+      display: inline-block;
+      min-width: 55px;
+    }
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'timetable.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    });
-</script>
+    .color-1 { background: #bfdbfe; color: #1e3a8a; }
+    .color-2 { background: #fde68a; color: #92400e; }
+    .color-3 { background: #bbf7d0; color: #166534; }
+    .color-4 { background: #fecaca; color: #7f1d1d; }
+    .color-5 { background: #e9d5ff; color: #5b21b6; }
+    .color-6 { background: #f9a8d4; color: #831843; }
+    .color-7 { background: #99f6e4; color: #115e59; }
+    .color-8 { background: #fed7aa; color: #9a3412; }
 
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #e0f2fe;
+      color: #0369a1;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Generated Timetable</h3>
+      <a href="/" class="btn btn-sm btn-outline-secondary">← Back to editor</a>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8">
+        <div class="app-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Schedule</h5>
+            <span class="text-muted" style="font-size: 0.8rem;">
+              Use case: {{ use_case }} • Template: {{ schedule_template }}
+            </span>
+          </div>
+          <div style="overflow:auto; max-height: 500px;">
+            <table class="timetable-table">
+              <thead>
+                <tr>
+                  <th class="time-col">Time / Day</th>
+                  <th>Day 1</th>
+                  <th>Day 2</th>
+                  <th>Day 3</th>
+                  <th>Day 4</th>
+                  <th>Day 5</th>
+                  <th>Day 6</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% set days = ['Day1','Day2','Day3','Day4','Day5','Day6'] %}
+                {% if timetable %}
+                  {% set any_day = days[0] %}
+                  {% set slots = timetable[any_day].keys() %}
+                  {% for time in slots %}
+                  <tr>
+                    <td class="time-col">{{ time }}</td>
+                    {% for day in days %}
+                      {% set client_name = timetable[day][time] %}
+                      {% if client_name %}
+                        {% set cc = student_colors.get(client_name, 'slot-empty') %}
+                        <td>
+                          <span class="slot {{ cc }}">{{ client_name }}</span>
+                        </td>
+                      {% else %}
+                        <td class="slot-empty"></td>
+                      {% endif %}
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">
+                      No timetable data.
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="app-card mb-3">
+          <h5>Conflicts</h5>
+          {% if conflicts %}
+            <ul class="mb-0">
+              {% for c in conflicts %}
+                <li>{{ c }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted mb-0">No conflicts detected.</p>
+          {% endif %}
+        </div>
+
+        <div class="app-card">
+          <h5>Client Summary</h5>
+          {% if summary %}
+            <ul class="mb-0 list-unstyled">
+              {% for name, info in summary.items() %}
+                {% set cc = student_colors.get(name, 'slot-empty') %}
+                <li class="mb-1">
+                  <span class="pill {{ cc }}">{{ name }}</span>
+                  <span class="text-muted" style="font-size: 0.8rem;">
+                    {{ info.scheduled }} / {{ info.needed }} sessions scheduled
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted mb-0">No summary available.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
