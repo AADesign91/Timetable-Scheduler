@@ -1,315 +1,245 @@
-import json
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
+from collections import defaultdict
+import itertools
 
 app = Flask(__name__)
 
-# ---------------------------------------------------------------------
-# CAMPUS CONFIGS (time slots)
-# ---------------------------------------------------------------------
-CAMPUS_CONFIGS = {
-    "campus_30": {
-        "label": "Campus A (30-minute periods, 8:00–16:00)",
-        "time_slots": [
-            "08:00–08:30", "08:30–09:00",
-            "09:00–09:30", "09:30–10:00",
-            "10:00–10:30", "10:30–11:00",
-            "11:00–11:30", "11:30–12:00",
-            "12:00–12:30", "12:30–13:00",
-            "13:00–13:30", "13:30–14:00",
-            "14:00–14:30", "14:30–15:00",
-            "15:00–15:30", "15:30–16:00",
-        ],
-    },
-    "campus_40": {
-        "label": "Campus B (mixed 30/40-minute periods, with recess blocks)",
-        "time_slots": [
-            "08:00–08:30",
-            "08:30–09:00",
-            "09:00–09:40",
-            "09:40–10:20",
-            "10:40–11:20",
-            "11:20–12:00",
-            "12:00–12:40",
-            "12:40–13:20",
-            "13:20–14:00",   # 1:20–2:00
-            "14:20–15:00",   # 2:20–3:00
-            "15:00–15:40",
-            "15:40–16:20",
-            "16:20–17:00",
-        ],
-    },
-}
 
+# ---------- TIME TEMPLATE HELPERS ----------
 
-# ---------------------------------------------------------------------
-# HELPER: Find common availability for a group of students
-# ---------------------------------------------------------------------
-def find_common_availability(grouped_students):
+def build_time_slots(template_name: str):
     """
-    grouped_students: list of dicts:
-      {
-        'name': str,
-        'periods_needed': int,
-        'availability': { '1': [...], '2': [...], ... }
+    Return a list of time strings based on a named schedule template.
+    Currently supports:
+      - 'campus_a' : 30-min slots 08:00–16:00 (skip 12:00–13:00 for lunch)
+      - 'campus_b' : 8–8:30, 8:30–9:00, then 40-min blocks with recess gaps
+    """
+    slots = []
+
+    if template_name == "campus_b":
+        # 8:00–8:30 and 8:30–9:00 (two 30-min pre-period chunks)
+        slots.append("08:00")
+        slots.append("08:30")
+
+        # Then 40-min blocks starting at 9:00 until around 17:00
+        # Skip recess at 10:20–10:40 and 14:00–14:20 (approximate)
+        hour = 9
+        minute = 0
+        end_hour = 17
+
+        def time_to_str(h, m):
+            return f"{h:02d}:{m:02d}"
+
+        def add_40_minutes(h, m):
+            m += 40
+            if m >= 60:
+                h += 1
+                m -= 60
+            return h, m
+
+        while hour < end_hour:
+            t_str = time_to_str(hour, minute)
+            # Skip recess windows (approx 10:20–10:40 and 14:00–14:20)
+            if not ((hour == 10 and minute == 20) or (hour == 14 and minute == 0)):
+                slots.append(t_str)
+            hour, minute = add_40_minutes(hour, minute)
+
+    else:
+        # Default: campus_a — 30-min slots 08:00–16:00, skipping 12:00–13:00 lunch
+        for hour in range(8, 16):  # 8:00 to 15:30 last slot
+            for minute in (0, 30):
+                # Skip 12:00–13:00
+                if hour == 12:
+                    continue
+                slots.append(f"{hour:02d}:{minute:02d}")
+
+    return slots
+
+
+# ---------- CORE SCHEDULER ----------
+
+def run_scheduler(payload):
+    """
+    Core scheduling engine.
+
+    Expects JSON-like dict payload:
+    {
+      "use_case": "learning_centre" | "clinic" | "general" | ...
+      "schedule_template": "campus_a" | "campus_b",
+      "clients": [
+        {
+          "name": "Nora",
+          "sessions_needed": 3,
+          "tag": "ELL",
+          "spacing_rule": "once_per_day" | "none",
+          "availability": {
+            "Day1": ["08:00", "08:30", ...],
+            "Day2": [...],
+            ...
+          }
+        },
+        ...
+      ]
+      // "groups": [...]  (reserved for future use)
+    }
+
+    Returns:
+      timetable: { 'Day1': { '08:00': "Nora", ... }, ... }
+      conflicts: [ "Unable to schedule Nora...", ... ]
+      summary: {
+         "Nora": { "needed": 3, "scheduled": 2 },
+         ...
       }
-    Returns: dict like { '1': [...], '3': [...] } with overlapping time slots only.
+      colors: { "Nora": "color-1", ... }  # for CSS class names
     """
-    if not grouped_students:
-        return {}
+    use_case = payload.get("use_case", "general")
+    schedule_template = payload.get("schedule_template", "campus_a")
+    clients = payload.get("clients", [])
+    # groups = payload.get("groups", [])  # reserved for future use
 
-    base = grouped_students[0]["availability"]
-    common = {day: set(times) for day, times in base.items()}
+    # Build base timetable structure: Day1–Day6, slots per template
+    time_slots = build_time_slots(schedule_template)
+    days = [f"Day{d}" for d in range(1, 7)]
 
-    for stu in grouped_students[1:]:
-        stu_av = stu["availability"]
-        to_remove = []
-        for day in list(common.keys()):
-            if day in stu_av:
-                common[day] &= set(stu_av[day])
-                if not common[day]:
-                    to_remove.append(day)
+    timetable = {
+        day: {slot: "" for slot in time_slots}
+        for day in days
+    }
+
+    # Assign a CSS color class to each client name for display
+    color_classes = [
+        "color-1", "color-2", "color-3", "color-4",
+        "color-5", "color-6", "color-7", "color-8"
+    ]
+    student_colors = {}
+    for idx, client in enumerate(clients):
+        name = client.get("name", "").strip()
+        if not name:
+            continue
+        student_colors[name] = color_classes[idx % len(color_classes)]
+
+    conflicts = []
+    summary = {}
+
+    # Normalize clients and schedule them one by one
+    for client in clients:
+        name = client.get("name", "").strip()
+        if not name:
+            continue
+
+        sessions_needed = int(client.get("sessions_needed", 0) or 0)
+        spacing_rule = client.get("spacing_rule", "none")
+        availability = client.get("availability", {})  # dict: DayX -> [times]
+
+        # Normalize day keys to "Day1".."Day6"
+        normalized_avail = {}
+        for day_key, times in availability.items():
+            if isinstance(day_key, str) and day_key.startswith("Day"):
+                day = day_key
             else:
-                to_remove.append(day)
-        for d in to_remove:
-            common.pop(d, None)
+                # If it's just "1", "2", etc.
+                day = f"Day{day_key}"
+            normalized_avail.setdefault(day, [])
+            normalized_avail[day].extend(times)
 
-    return {d: sorted(list(v)) for d, v in common.items()}
+        scheduled_count = 0
+        used_days_for_client = set()
+
+        # Simple greedy scheduling:
+        # iterate days in order, then times in order
+        for day in days:
+            # Enforce "once per day" rule if requested
+            if spacing_rule == "once_per_day" and day in used_days_for_client:
+                continue
+
+            available_times = sorted(set(normalized_avail.get(day, [])))
+            for slot in time_slots:
+                if scheduled_count >= sessions_needed:
+                    break
+
+                if slot in available_times and timetable[day][slot] == "":
+                    # Slot is free, and client is available here
+                    timetable[day][slot] = name
+                    scheduled_count += 1
+                    used_days_for_client.add(day)
+
+                    if spacing_rule == "once_per_day":
+                        # Once one session is placed on this day, move to next day
+                        break
+
+            if scheduled_count >= sessions_needed:
+                break
+
+        if scheduled_count < sessions_needed:
+            conflicts.append(
+                f"Unable to fully schedule {name}: "
+                f"needed {sessions_needed}, scheduled {scheduled_count}."
+            )
+
+        summary[name] = {
+            "needed": sessions_needed,
+            "scheduled": scheduled_count,
+        }
+
+    return timetable, conflicts, summary, student_colors
 
 
-# ---------------------------------------------------------------------
-# ROUTES
-# ---------------------------------------------------------------------
+# ---------- ROUTES ----------
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    # We don't yet have persistent data, so pass empty placeholders
+    return render_template(
+        "index.html",
+        student_periods={},      # kept for forward compatibility if you reference it
+        student_colors={},       # same idea – won't break Jinja
+    )
 
 
 @app.route("/generate_timetable", methods=["POST"])
 def generate_timetable():
-    data = request.get_json()
-    if not data:
-        return "No data received", 400
+    """
+    HTML flow:
+    - Frontend sends JSON via fetch() from index.html
+    - We run the scheduler
+    - Return timetable.html with rendered results
+    """
+    data = request.get_json() or {}
 
-    campus_key = data.get("campus", "campus_30")
-    campus = CAMPUS_CONFIGS.get(campus_key, CAMPUS_CONFIGS["campus_30"])
-    time_slots = campus["time_slots"]
-    campus_label = campus["label"]
-
-    students_data = data.get("students", [])
-    groups_data = data.get("groups", [])
-    teacher_max = data.get("teacherMaxPerDay", {}) or {}
-    teacher_unavail = data.get("teacherUnavailability", {}) or {}
-    group_rules = data.get("groupRules", {}) or {}
-
-    # Normalize students into a dict keyed by name
-    name_to_student = {}
-    for s in students_data:
-        name = s.get("name")
-        if not name:
-            continue
-
-        periods_needed = int(s.get("periodsNeeded", 0) or 0)
-        availability = s.get("availability", {})
-        spacing_rule = s.get("spacingRule", "none") or "none"
-
-        normalized = {}
-        for day, slots in availability.items():
-            normalized[str(day)] = list(set(slots))
-
-        name_to_student[name] = {
-            "name": name,
-            "periods_needed": periods_needed,
-            "availability": normalized,
-            "spacing_rule": spacing_rule,
-        }
-
-    conflicts = []
-
-    # Pre-check: students with 0 availability but >0 needed
-    for name, stu in name_to_student.items():
-        total_slots = sum(len(v) for v in stu["availability"].values())
-        if stu["periods_needed"] > 0 and total_slots == 0:
-            conflicts.append(f"{name} has no available times selected.")
-
-    # Build groups list
-    groups = []
-    grouped_names = set()
-
-    # Explicit groups from front-end
-    for gnames in groups_data:
-        group_students = [name_to_student[n] for n in gnames if n in name_to_student]
-        if group_students:
-            groups.append(group_students)
-            for s in group_students:
-                grouped_names.add(s["name"])
-
-    # Any ungrouped student becomes their own group
-    for name, stu in name_to_student.items():
-        if name not in grouped_names:
-            groups.append([stu])
-
-    # Initialize empty timetable: Day1..Day6 × time_slots
-    timetable = {
-        f"Day{d}": {slot: "" for slot in time_slots}
-        for d in range(1, 7)
-    }
-
-    # Track total teacher load per day (all groups combined)
-    day_load = {str(d): 0 for d in range(1, 7)}
-
-    # Track per-student sessions per day (for spacing rules)
-    student_day_counts = {
-        name: {str(d): 0 for d in range(1, 7)}
-        for name in name_to_student.keys()
-    }
-
-    # Colour classes per student
-    color_classes = [
-        "slot-color-1", "slot-color-2", "slot-color-3", "slot-color-4",
-        "slot-color-5", "slot-color-6", "slot-color-7", "slot-color-8"
-    ]
-    student_colors = {}
-    color_index = 0
-    for name in sorted(name_to_student.keys()):
-        student_colors[name] = color_classes[color_index % len(color_classes)]
-        color_index += 1
-
-    # Scheduling
-    for group in groups:
-        label = ", ".join([s["name"] for s in group])
-        needed = max(s["periods_needed"] for s in group)
-        if needed <= 0:
-            continue
-
-        common = find_common_availability(group)
-        scheduled = 0
-
-        for d in range(1, 7):
-            day_key = str(d)
-            tk = f"Day{d}"
-            allowed_slots = common.get(day_key, [])
-            max_for_day = teacher_max.get(day_key)
-            try:
-                max_for_day = int(max_for_day) if max_for_day not in (None, "", 0) else None
-            except (TypeError, ValueError):
-                max_for_day = None
-
-            for slot in time_slots:
-                if scheduled >= needed:
-                    break
-
-                # Only consider slots that are in group's common availability
-                if slot not in allowed_slots:
-                    continue
-
-                # Skip if teacher unavailable
-                if slot in teacher_unavail.get(day_key, []):
-                    continue
-
-                # Respect teacher daily max
-                if max_for_day is not None and day_load[day_key] >= max_for_day:
-                    continue
-
-                # Spacing rules: check each student in the group
-                spacing_ok = True
-                for stu in group:
-                    name = stu["name"]
-                    rule = stu.get("spacing_rule", "none") or "none"
-                    day_counts = student_day_counts.get(name, {})
-
-                    # once per day: at most 1 session on this day
-                    if rule == "once_per_day":
-                        if day_counts.get(day_key, 0) >= 1:
-                            spacing_ok = False
-                            break
-
-                    # every other day:
-                    # - at most 1 on this day
-                    # - must not have sessions on previous or next day
-                    elif rule == "every_other_day":
-                        if day_counts.get(day_key, 0) >= 1:
-                            spacing_ok = False
-                            break
-                        prev_day = str(d - 1) if d > 1 else None
-                        next_day = str(d + 1) if d < 6 else None
-                        if prev_day and day_counts.get(prev_day, 0) >= 1:
-                            spacing_ok = False
-                            break
-                        if next_day and day_counts.get(next_day, 0) >= 1:
-                            spacing_ok = False
-                            break
-
-                if not spacing_ok:
-                    continue
-
-                # Place the group
-                if timetable[tk][slot] == "":
-                    timetable[tk][slot] = label
-                    scheduled += 1
-                    day_load[day_key] += 1
-
-                    # Update student day counts
-                    for stu in group:
-                        name = stu["name"]
-                        student_day_counts[name][day_key] = student_day_counts[name].get(day_key, 0) + 1
-
-            if scheduled >= needed:
-                break
-
-        if scheduled < needed:
-            conflicts.append(
-                f"Could not schedule all periods for [{label}] "
-                f"(needed {needed}, scheduled {scheduled})."
-            )
-
-    days = [1, 2, 3, 4, 5, 6]
-
-    # Compute scheduled counts per student (total slots across timetable)
-    scheduled_counts = {name: 0 for name in name_to_student.keys()}
-    for d in days:
-        dk = f"Day{d}"
-        for slot in time_slots:
-            lbl = timetable[dk][slot]
-            if not lbl:
-                continue
-            names = [n.strip() for n in lbl.split(",")]
-            for n in names:
-                if n in scheduled_counts:
-                    scheduled_counts[n] += 1
-
-    student_periods = {name: stu["periods_needed"] for name, stu in name_to_student.items()}
-
-    # JSON payload for timetable page (for copy / export / reload)
-    timetable_json = {
-        "campus_key": campus_key,
-        "campus_label": campus_label,
-        "time_slots": time_slots,
-        "days": days,
-        "timetable": timetable,
-        "conflicts": conflicts,
-        "students": students_data,
-        "groups": groups_data,
-        "teacherMaxPerDay": teacher_max,
-        "teacherUnavailability": teacher_unavail,
-        "groupRules": group_rules,
-        "scheduledCounts": scheduled_counts,
-        "studentPeriods": student_periods,
-    }
-    timetable_json_str = json.dumps(timetable_json)
+    timetable, conflicts, summary, student_colors = run_scheduler(data)
 
     return render_template(
         "timetable.html",
-        campus_label=campus_label,
-        time_slots=time_slots,
-        days=days,
         timetable=timetable,
         conflicts=conflicts,
+        summary=summary,
         student_colors=student_colors,
-        scheduled_counts=scheduled_counts,
-        student_periods=student_periods,
-        timetable_json_str=timetable_json_str,
+        use_case=data.get("use_case", "general"),
+        schedule_template=data.get("schedule_template", "campus_a"),
+    )
+
+
+@app.route("/api/generate_timetable", methods=["POST"])
+def api_generate_timetable():
+    """
+    JSON API version:
+      POST /api/generate_timetable
+      Body: same payload expected by run_scheduler()
+      Returns JSON: { timetable, conflicts, summary, student_colors }
+    """
+    data = request.get_json() or {}
+
+    timetable, conflicts, summary, student_colors = run_scheduler(data)
+
+    return jsonify(
+        {
+            "timetable": timetable,
+            "conflicts": conflicts,
+            "summary": summary,
+            "student_colors": student_colors,
+        }
     )
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True, host="0.0.0.0")
