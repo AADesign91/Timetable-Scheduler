@@ -15,172 +15,214 @@
       padding: 20px;
     }
 
-    .app-card {
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
     .timetable-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.8rem;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+      border-radius: 0.75rem;
+      overflow: hidden;
     }
 
     .timetable-table th,
     .timetable-table td {
       border: 1px solid #e2e8f0;
-      padding: 4px;
+      padding: 6px 8px;
       text-align: center;
-      min-width: 70px;
+      font-size: 0.8rem;
     }
 
-    .timetable-table th {
-      background: #e0ebff;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    .time-col {
-      background: #f8fafc;
+    .timetable-table thead th {
+      background: #0f172a;
+      color: #e5e7eb;
       font-weight: 600;
       position: sticky;
-      left: 0;
+      top: 0;
       z-index: 2;
     }
 
-    .slot-empty {
-      background: #f8fafc;
-      color: #94a3b8;
+    .time-col {
+      background: #e5e7eb;
+      font-weight: 600;
+      width: 70px;
+      position: sticky;
+      left: 0;
+      z-index: 1;
     }
 
     .slot {
-      border-radius: 10px;
-      padding: 2px 4px;
-      display: inline-block;
-      min-width: 55px;
+      min-width: 110px;
+      height: 34px;
+      vertical-align: middle;
+      white-space: nowrap;
     }
 
-    .color-1 { background: #bfdbfe; color: #1e3a8a; }
-    .color-2 { background: #fde68a; color: #92400e; }
-    .color-3 { background: #bbf7d0; color: #166534; }
-    .color-4 { background: #fecaca; color: #7f1d1d; }
-    .color-5 { background: #e9d5ff; color: #5b21b6; }
-    .color-6 { background: #f9a8d4; color: #831843; }
-    .color-7 { background: #99f6e4; color: #115e59; }
-    .color-8 { background: #fed7aa; color: #9a3412; }
+    .slot-empty {
+      background: #f9fafb;
+      color: #9ca3af;
+    }
 
-    .pill {
-      display: inline-block;
+    /* Color classes for different clients */
+    .color-1 { background: #dbeafe; color: #1d4ed8; }
+    .color-2 { background: #dcfce7; color: #15803d; }
+    .color-3 { background: #fee2e2; color: #b91c1c; }
+    .color-4 { background: #fef3c7; color: #92400e; }
+    .color-5 { background: #f5f3ff; color: #5b21b6; }
+    .color-6 { background: #ecfeff; color: #0e7490; }
+    .color-7 { background: #fdf2f8; color: #be185d; }
+    .color-8 { background: #eff6ff; color: #1d4ed8; }
+
+    .legend-pill {
+      display: inline-flex;
+      align-items: center;
       padding: 2px 8px;
       border-radius: 999px;
       font-size: 0.75rem;
-      background: #e0f2fe;
-      color: #0369a1;
-      margin-right: 4px;
+      margin: 2px;
+      background: #e5e7eb;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .timetable-table {
+        box-shadow: none;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3 class="mb-0">Generated Timetable</h3>
-      <a href="/" class="btn btn-sm btn-outline-secondary">← Back to editor</a>
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+      <div>
+        <h3 class="mb-0">Generated Timetable</h3>
+        <small class="text-muted">
+          Use case: {{ use_case|default("general") }},
+          Template: {{ schedule_template|default("campus_a") }}
+        </small>
+      </div>
+      <div>
+        <button id="printBtn" class="btn btn-sm btn-outline-primary mr-2">
+          Print / Save as PDF
+        </button>
+        <a href="/" class="btn btn-sm btn-outline-secondary">← Back to editor</a>
+      </div>
     </div>
 
     <div class="row">
-      <div class="col-md-8">
-        <div class="app-card">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">Schedule</h5>
-            <span class="text-muted" style="font-size: 0.8rem;">
-              Use case: {{ use_case }} • Template: {{ schedule_template }}
-            </span>
-          </div>
-          <div style="overflow:auto; max-height: 500px;">
-            <table class="timetable-table">
-              <thead>
+      <div class="col-lg-9 mb-3">
+        <div class="table-responsive">
+          <table class="timetable-table">
+            <thead>
+              <tr>
+                <th class="time-col">Time</th>
+                {% for day in days %}
+                  <th>{{ day }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for time in time_slots %}
                 <tr>
-                  <th class="time-col">Time / Day</th>
-                  <th>Day 1</th>
-                  <th>Day 2</th>
-                  <th>Day 3</th>
-                  <th>Day 4</th>
-                  <th>Day 5</th>
-                  <th>Day 6</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% set days = ['Day1','Day2','Day3','Day4','Day5','Day6'] %}
-                {% if timetable %}
-                  {% set any_day = days[0] %}
-                  {% set slots = timetable[any_day].keys() %}
-                  {% for time in slots %}
-                  <tr>
-                    <td class="time-col">{{ time }}</td>
-                    {% for day in days %}
-                      {% set client_name = timetable[day][time] %}
-                      {% if client_name %}
-                        {% set cc = student_colors.get(client_name, 'slot-empty') %}
-                        <td>
-                          <span class="slot {{ cc }}">{{ client_name }}</span>
-                        </td>
-                      {% else %}
-                        <td class="slot-empty"></td>
-                      {% endif %}
-                    {% endfor %}
-                  </tr>
+                  <td class="time-col">{{ time }}</td>
+                  {% for day in days %}
+                    {% set name = timetable[day][time] %}
+                    {% if name %}
+                      <td class="slot {{ student_colors.get(name, '') }}">
+                        {{ name }}
+                      </td>
+                    {% else %}
+                      <td class="slot slot-empty">
+                        –
+                      </td>
+                    {% endif %}
                   {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="7" class="text-center text-muted">
-                      No timetable data.
-                    </td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="app-card mb-3">
-          <h5>Conflicts</h5>
-          {% if conflicts %}
-            <ul class="mb-0">
-              {% for c in conflicts %}
-                <li>{{ c }}</li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <p class="text-muted mb-0">No conflicts detected.</p>
-          {% endif %}
+      <div class="col-lg-3 mb-3">
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <strong>Client summary</strong>
+          </div>
+          <div class="card-body p-2">
+            {% if summary %}
+              <ul class="list-unstyled mb-0">
+                {% for name, info in summary.items() %}
+                  <li class="mb-2">
+                    <div><strong>{{ name }}</strong></div>
+                    <div style="font-size: 0.8rem;" class="text-muted">
+                      {{ info.scheduled }} / {{ info.needed }} sessions scheduled
+                      {% if info.session_length %}
+                        • {{ info.session_length }} min each
+                      {% endif %}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0" style="font-size: 0.85rem;">
+                No clients in summary.
+              </p>
+            {% endif %}
+          </div>
         </div>
 
-        <div class="app-card">
-          <h5>Client Summary</h5>
-          {% if summary %}
-            <ul class="mb-0 list-unstyled">
-              {% for name, info in summary.items() %}
-                {% set cc = student_colors.get(name, 'slot-empty') %}
-                <li class="mb-1">
-                  <span class="pill {{ cc }}">{{ name }}</span>
-                  <span class="text-muted" style="font-size: 0.8rem;">
-                    {{ info.scheduled }} / {{ info.needed }} sessions scheduled
-                  </span>
-                </li>
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <strong>Legend</strong>
+          </div>
+          <div class="card-body p-2">
+            {% if student_colors %}
+              {% for name, cls in student_colors.items() %}
+                <div class="legend-pill mb-1">
+                  <span class="{{ cls }} mr-2" style="display:inline-block;width:12px;height:12px;border-radius:999px;"></span>
+                  <span>{{ name }}</span>
+                </div>
               {% endfor %}
-            </ul>
-          {% else %}
-            <p class="text-muted mb-0">No summary available.</p>
-          {% endif %}
+            {% else %}
+              <p class="text-muted mb-0" style="font-size: 0.85rem;">
+                No clients scheduled.
+              </p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header py-2">
+            <strong>Conflicts</strong>
+          </div>
+          <div class="card-body p-2">
+            {% if conflicts %}
+              <ul class="mb-0">
+                {% for msg in conflicts %}
+                  <li style="font-size: 0.8rem;">{{ msg }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0" style="font-size: 0.85rem;">
+                No scheduling conflicts detected.
+              </p>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+    document.getElementById("printBtn").addEventListener("click", function () {
+      window.print();
+    });
+  </script>
 </body>
 </html>
