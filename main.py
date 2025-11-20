@@ -424,14 +424,33 @@ def index():
 
 @app.route("/generate_timetable", methods=["POST"])
 def generate_timetable():
-    raw = request.form.get("payload_json", "") or "{}"
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        data = {}
+    """
+    Universal POST handler — works on both Replit and Render.
+    Accepts:
+      - JSON (Content-Type: application/json)  ← used by fetch() and Render
+      - form-data containing payload_json       ← used by Replit <form>
+    """
 
+    # 1. Try JSON body (Render)
+    data = request.get_json(silent=True)
+
+    # 2. Fallback: form post (Replit)
+    if not data:
+        raw = request.form.get("payload_json")
+        if raw:
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                return "Invalid JSON in payload_json", 400
+
+    # 3. If still nothing, reject
+    if not data:
+        return "Missing timetable data", 400
+
+    # 4. Run scheduling engine
     result = run_scheduler(data)
 
+    # 5. Render result
     return render_template(
         "timetable.html",
         days=result["days"],
@@ -441,6 +460,7 @@ def generate_timetable():
         summary=result["summary"],
         student_colors=result["student_colors"],
     )
+
 
 
 if __name__ == "__main__":
