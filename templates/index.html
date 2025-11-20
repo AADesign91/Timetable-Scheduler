@@ -2,219 +2,721 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Universal Scheduler</title>
+  <title>TimeGrid · Smart Scheduling Grid</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Simple, clean styling -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
   />
   <style>
+    :root {
+      --tg-bg: #020617;
+      --tg-surface: #0b1120;
+      --tg-surface-soft: #020617;
+      --tg-accent: #22c55e;
+      --tg-accent-soft: rgba(34, 197, 94, 0.12);
+      --tg-border: #1e293b;
+      --tg-muted: #64748b;
+      --tg-text: #e5e7eb;
+      --tg-text-soft: #9ca3af;
+    }
+
+    body.light-theme {
+      --tg-bg: #f1f5f9;
+      --tg-surface: #ffffff;
+      --tg-surface-soft: #f9fafb;
+      --tg-accent: #16a34a;
+      --tg-accent-soft: rgba(22, 163, 74, 0.12);
+      --tg-border: #cbd5e1;
+      --tg-muted: #6b7280;
+      --tg-text: #0f172a;
+      --tg-text-soft: #4b5563;
+      background: radial-gradient(circle at top, #e5e7eb, #f1f5f9 60%);
+    }
+
     body {
-      background: #f1f5f9;
+      background: radial-gradient(circle at top, #0f172a, #020617 55%);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       padding: 20px;
+      color: var(--tg-text);
     }
 
-    .app-card {
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-      padding: 20px;
-      margin-bottom: 20px;
+    .page-shell {
+      max-width: 1280px;
+      margin: 0 auto;
     }
 
-    .timetable-table {
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      gap: 12px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 20% 20%, #4ade80, #22c55e 40%, #16a34a 70%, #022c22 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 0.8),
+        0 10px 25px rgba(34, 197, 94, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.light-theme .brand-logo {
+      box-shadow:
+        0 0 0 1px rgba(148, 163, 184, 0.8),
+        0 4px 15px rgba(22, 163, 74, 0.35);
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      opacity: 0.98;
+    }
+
+    .brand-badge {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.95);
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--tg-text-soft);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--tg-text-soft);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    body.light-theme .pill {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: #e2e8f0;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--tg-accent);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
+    }
+
+    .card {
+      border-radius: 0.9rem;
+      border: 1px solid var(--tg-border);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.08), var(--tg-surface));
+      color: var(--tg-text);
+      box-shadow:
+        0 20px 40px rgba(15, 23, 42, 0.6),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    body.light-theme .card {
+      box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.1),
+        0 0 0 1px rgba(148, 163, 184, 0.4);
+    }
+
+    .card-header {
+      border-bottom: 1px solid rgba(51, 65, 85, 0.9);
+      background: linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.8));
+      color: #e5e7eb;
+      padding-top: 0.55rem;
+      padding-bottom: 0.55rem;
+    }
+
+    body.light-theme .card-header {
+      background: linear-gradient(to right, #0f172a, #1e293b);
+      color: #e5e7eb;
+      border-bottom-color: #e2e8f0;
+    }
+
+    .card-header h5 {
+      margin-bottom: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #cbd5f5;
+    }
+
+    .card-body {
+      background: linear-gradient(to bottom, var(--tg-surface), var(--tg-surface-soft));
+    }
+
+    .form-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #cbd5f5;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    body.light-theme .form-group label {
+      color: #0f172a;
+    }
+
+    .form-control,
+    .form-control-sm,
+    select.form-control-sm {
+      background-color: #020617;
+      border-color: #1e293b;
+      color: #e5e7eb;
+      font-size: 0.82rem;
+    }
+
+    body.light-theme .form-control,
+    body.light-theme .form-control-sm,
+    body.light-theme select.form-control-sm {
+      background-color: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .form-control:focus,
+    .form-control-sm:focus {
+      background-color: #020617;
+      border-color: var(--tg-accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6);
+      color: #e5e7eb;
+    }
+
+    body.light-theme .form-control:focus,
+    body.light-theme .form-control-sm:focus {
+      background-color: #ffffff;
+      border-color: var(--tg-accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+      color: #0f172a;
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(to right, #16a34a, #15803d);
+    }
+
+    .btn-success {
+      background: var(--tg-accent-soft);
+      border-color: rgba(34, 197, 94, 0.9);
+      color: #bbf7d0;
+      font-weight: 500;
+    }
+
+    body.light-theme .btn-success {
+      color: #166534;
+    }
+
+    .btn-success:hover {
+      background: rgba(22, 163, 74, 0.5);
+      border-color: #22c55e;
+    }
+
+    .btn-outline-secondary {
+      border-color: #475569;
+      color: #e5e7eb;
+    }
+
+    body.light-theme .btn-outline-secondary {
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .btn-outline-secondary:hover {
+      background: #1e293b;
+      border-color: #e5e7eb;
+      color: #e5e7eb;
+    }
+
+    body.light-theme .btn-outline-secondary:hover {
+      background: #e5e7eb;
+      border-color: #0f172a;
+      color: #0f172a;
+    }
+
+    .btn-xs {
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      line-height: 1.2;
+    }
+
+    .muted-note {
+      font-size: 0.75rem;
+      color: var(--tg-muted);
+    }
+
+    /* Availability grid + accordion */
+    .availability-grid {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.8rem;
+      table-layout: fixed;
+      background: var(--tg-surface-soft);
+      border-radius: 0.9rem;
+      overflow: hidden;
     }
 
-    .timetable-table th,
-    .timetable-table td {
-      border: 1px solid #e2e8f0;
-      padding: 4px;
+    .availability-grid th,
+    .availability-grid td {
+      border: 1px solid var(--tg-border);
+      font-size: 0.7rem;
       text-align: center;
-      min-width: 70px;
+      padding: 3px;
+      color: var(--tg-text-soft);
     }
 
-    .timetable-table th {
-      background: #e0ebff;
+    .availability-grid thead th {
+      background: var(--tg-surface);
+      color: #e5e7eb;
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 2;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.72rem;
     }
 
-    .time-col {
-      background: #f8fafc;
+    .availability-grid .time-col {
+      background: var(--tg-surface);
       font-weight: 600;
       position: sticky;
       left: 0;
-      z-index: 2;
+      z-index: 1;
+      width: 64px;
+      color: #cbd5f5;
+    }
+
+    body.light-theme .availability-grid thead th,
+    body.light-theme .availability-grid .time-col {
+      color: #0f172a;
     }
 
     .availability-cell {
       cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s;
+      user-select: none;
+      height: 18px;
+      vertical-align: middle;
+      transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+      background: var(--tg-surface-soft);
+      color: #475569;
     }
 
     .availability-cell.selected {
-      background: #3b82f6;
-      color: #ffffff;
-      box-shadow: inset 0 0 0 1px #1d4ed8;
+      background: rgba(34, 197, 94, 0.2);
+      color: #bbf7d0;
+      box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.9);
     }
 
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
+    body.light-theme .availability-cell.selected {
+      color: #064e3b;
+    }
+
+    .availability-cell:hover {
+      background: rgba(148, 163, 184, 0.15);
+    }
+
+    .hour-header-row {
+      background: linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.85));
+      color: #e5e7eb;
+      cursor: pointer;
       font-size: 0.75rem;
-      background: #e0f2fe;
-      color: #0369a1;
-      margin-right: 4px;
     }
 
-    .client-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid #e5e7eb;
+    body.light-theme .hour-header-row {
+      background: #e5e7eb;
+      color: #0f172a;
     }
 
-    .client-row:last-child {
-      border-bottom: none;
+    .hour-header-row .time-col {
+      font-weight: 700;
     }
 
-    .btn-main {
-      background: #2563eb;
-      border-color: #2563eb;
-      color: white;
+    .hour-header-label {
+      text-align: left;
+      padding-left: 8px;
+    }
+
+    .hour-toggle-icon {
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+
+    .client-card {
+      border-radius: 0.7rem;
+      border: 1px solid var(--tg-border);
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.22), var(--tg-surface-soft));
+      cursor: pointer;
+      transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+    }
+
+    .client-card.active {
+      border-color: rgba(34, 197, 94, 0.9);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.7);
+      background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.35), var(--tg-surface-soft));
+      transform: translateY(-1px);
+    }
+
+    .client-card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--tg-text);
+    }
+
+    .client-card-meta {
+      font-size: 0.74rem;
+      color: var(--tg-text-soft);
+    }
+
+    .client-tag {
+      font-size: 0.7rem;
+      padding: 1px 6px;
       border-radius: 999px;
-      padding: 6px 14px;
+      background: rgba(59, 130, 246, 0.2);
+      color: #bfdbfe;
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
-    .btn-main:hover {
-      background: #1d4ed8;
-      border-color: #1d4ed8;
-    }
-
-    .color-tag {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
+    .group-label {
+      font-size: 0.7rem;
+      padding: 1px 6px;
       border-radius: 999px;
-      margin-right: 6px;
+      background: rgba(79, 70, 229, 0.25);
+      color: #c7d2fe;
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .theme-toggle-btn {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: transparent;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    body.light-theme .theme-toggle-btn {
+      border-color: #cbd5e1;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    @media (max-width: 991.98px) {
+      body {
+        padding: 12px;
+      }
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .availability-grid .time-col {
+        position: static;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3 class="mb-0">Universal Scheduler</h3>
-      <span class="text-muted" style="font-size: 0.85rem;">
-        Configure clients & availability, then generate a timetable.
-      </span>
-    </div>
+  <div class="page-shell">
+    <header class="page-header">
+      <div>
+        <div class="brand-wrap">
+          <div class="brand-logo">
+            <!-- Simple grid-style logo -->
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="8" height="8" rx="2" ry="2" fill="rgba(15,23,42,0.92)"></rect>
+              <rect x="13" y="3" width="8" height="8" rx="2" ry="2" fill="rgba(15,23,42,0.85)"></rect>
+              <rect x="3" y="13" width="8" height="8" rx="2" ry="2" fill="rgba(15,23,42,0.85)"></rect>
+              <rect x="13" y="13" width="8" height="8" rx="2" ry="2" fill="rgba(15,23,42,0.92)"></rect>
+            </svg>
+            <span class="brand-badge"></span>
+          </div>
+          <div>
+            <h1 class="page-title">TimeGrid</h1>
+            <p class="page-subtitle">Flexible cycles · 10-minute slots · drag-to-select availability</p>
+          </div>
+        </div>
+        <div class="mt-1">
+          <span class="pill">
+            <span class="pill-dot"></span>
+            Scheduling prototype · local save + JSON
+          </span>
+        </div>
+      </div>
+      <div>
+        <button id="themeToggle" class="theme-toggle-btn">
+          Toggle light / dark
+        </button>
+      </div>
+    </header>
 
-    <!-- CONFIG / CONTROLS -->
     <div class="row">
-      <div class="col-md-4">
-        <div class="app-card">
-          <h5>Configuration</h5>
-          <div class="form-group">
-            <label for="useCase">Use case</label>
-            <select id="useCase" class="form-control">
-              <option value="general">General scheduling</option>
-              <option value="learning_centre">Learning centre</option>
-              <option value="clinic">Clinic / Therapy</option>
-              <option value="coaching">Coaching / Lessons</option>
-            </select>
+      <!-- Left column -->
+      <div class="col-lg-4 mb-3">
+        <!-- Grid / cycle config -->
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <h5>Grid & cycle</h5>
           </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="cycleLength">Cycle length (days)</label>
+              <select id="cycleLength" class="form-control form-control-sm">
+                <option value="3">3 days</option>
+                <option value="4">4 days</option>
+                <option value="5">5 days</option>
+                <option value="6" selected>6 days</option>
+                <option value="7">7 days</option>
+                <option value="8">8 days</option>
+                <option value="10">10 days</option>
+              </select>
+              <small class="muted-note">
+                Days are labeled Day1…DayN and repeated in the timetable.
+              </small>
+            </div>
 
-          <div class="form-group">
-            <label for="scheduleTemplate">Schedule template</label>
-            <select id="scheduleTemplate" class="form-control">
-              <option value="campus_a">Template A (30-min blocks, 8–4)</option>
-              <option value="campus_b">Template B (Mixed 30/40-min blocks)</option>
-            </select>
-          </div>
+            <div class="form-group">
+              <label>Workday window</label>
+              <div class="form-row">
+                <div class="col">
+                  <input type="time" id="workdayStart" class="form-control form-control-sm" value="08:00" step="600" />
+                  <small class="muted-note">Start</small>
+                </div>
+                <div class="col">
+                  <input type="time" id="workdayEnd" class="form-control form-control-sm" value="17:00" step="600" />
+                  <small class="muted-note">End</small>
+                </div>
+              </div>
+            </div>
 
-          <hr />
+            <div class="form-group">
+              <label for="maxClientsPerSlot">Max clients per slot</label>
+              <input
+                type="number"
+                id="maxClientsPerSlot"
+                class="form-control form-control-sm"
+                min="1"
+                value="1"
+              />
+              <small class="muted-note">
+                Use 1 for 1:1, or higher for group sessions / classes.
+              </small>
+            </div>
 
-          <h5>Add Client</h5>
-          <div class="form-group">
-            <label for="clientName">Client name</label>
-            <input type="text" id="clientName" class="form-control" />
+            <div class="form-group">
+              <label>Blackout times</label>
+              <div class="form-row mb-2">
+                <div class="col">
+                  <input type="time" id="blackoutStart" class="form-control form-control-sm" step="600" />
+                  <small class="muted-note">From</small>
+                </div>
+                <div class="col">
+                  <input type="time" id="blackoutEnd" class="form-control form-control-sm" step="600" />
+                  <small class="muted-note">To</small>
+                </div>
+              </div>
+              <button id="addBlackoutBtn" type="button" class="btn btn-xs btn-outline-secondary mb-2">
+                Add blackout
+              </button>
+              <ul id="blackoutList" class="mb-0" style="list-style:none; padding-left:0;"></ul>
+              <small class="muted-note">
+                Blackouts apply to every day in the cycle and are removed from the grid.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label>Save / load configuration</label>
+              <div class="d-flex mb-1">
+                <button id="saveJsonBtn" type="button" class="btn btn-sm btn-outline-secondary mr-2">
+                  Save as JSON
+                </button>
+                <button id="loadJsonBtn" type="button" class="btn btn-sm btn-outline-secondary">
+                  Load JSON
+                </button>
+              </div>
+              <small class="muted-note">
+                JSON includes cycle, workday, capacity, blackouts, clients, and availability.
+              </small>
+              <input
+                type="file"
+                id="jsonFileInput"
+                accept=".json,application/json"
+                style="display: none;"
+              />
+            </div>
+
+            <hr />
+
+            <form id="generateForm" method="POST" action="/generate_timetable">
+              <input type="hidden" id="payloadInput" name="payload_json" />
+              <button
+                id="generateBtn"
+                type="button"
+                class="btn btn-primary btn-block"
+              >
+                Generate timetable
+              </button>
+            </form>
           </div>
-          <div class="form-group">
-            <label for="sessionsNeeded">Sessions needed per cycle</label>
-            <input
-              type="number"
-              id="sessionsNeeded"
-              class="form-control"
-              min="1"
-              value="1"
-            />
+        </div>
+
+        <!-- Add client -->
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <h5>Add client</h5>
           </div>
-          <div class="form-group">
-            <label for="clientTag">Tag (optional)</label>
-            <input
-              type="text"
-              id="clientTag"
-              class="form-control"
-              placeholder="e.g., ELL, G3, Adult"
-            />
+          <div class="card-body">
+            <div class="form-group">
+              <label for="clientName">Client name</label>
+              <input type="text" id="clientName" class="form-control form-control-sm" />
+            </div>
+            <div class="form-group">
+              <label for="sessionsNeeded">Sessions needed per cycle</label>
+              <input
+                type="number"
+                id="sessionsNeeded"
+                class="form-control form-control-sm"
+                min="1"
+                value="1"
+              />
+            </div>
+            <div class="form-group">
+              <label for="sessionLength">Session length (minutes)</label>
+              <input
+                type="number"
+                id="sessionLength"
+                class="form-control form-control-sm"
+                min="10"
+                step="10"
+                value="60"
+              />
+              <small class="muted-note">
+                TimeGrid uses 10-minute slots and will book contiguous blocks.
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="maxPerDay">Max sessions per day (optional)</label>
+              <input
+                type="number"
+                id="maxPerDay"
+                class="form-control form-control-sm"
+                min="1"
+              />
+              <small class="muted-note">
+                Leave blank for no per-day limit.
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="clientTag">Tag (optional)</label>
+              <input
+                type="text"
+                id="clientTag"
+                class="form-control form-control-sm"
+                placeholder="e.g. ELL, grade 4, OT"
+              />
+            </div>
+            <div class="form-group">
+              <label for="spacingRule">Spacing rule</label>
+              <select id="spacingRule" class="form-control form-control-sm">
+                <option value="none">None (allow multiple per day)</option>
+                <option value="once_per_day">Max one session per day</option>
+                <option value="no_consecutive_days">No consecutive days</option>
+              </select>
+              <small class="muted-note">
+                Used when placing multiple sessions across the cycle.
+              </small>
+            </div>
+
+            <button
+              id="addClientBtn"
+              type="button"
+              class="btn btn-success btn-sm btn-block"
+            >
+              Add client
+            </button>
+            <small class="muted-note d-block mt-1">
+              After adding, click a client card, then click & drag on the grid to set availability.
+            </small>
           </div>
-          <div class="form-group">
-            <label for="spacingRule">Spacing rule</label>
-            <select id="spacingRule" class="form-control">
-              <option value="none">No spacing requirement</option>
-              <option value="once_per_day">At most once per day</option>
-            </select>
+        </div>
+
+        <!-- Client list -->
+        <div class="card">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Clients</h5>
+            <div class="d-flex align-items-center">
+              <button id="groupSelectedBtn" class="btn btn-xs btn-outline-secondary mr-2" type="button">
+                Group selected
+              </button>
+              <small class="text-muted" style="font-size: 0.75rem;">Select / deselect</small>
+            </div>
           </div>
-          <button id="addClientBtn" class="btn btn-main btn-block">
-            Add client
-          </button>
-          <small class="text-muted d-block mt-2">
-            Select availability on the grid while a client is active.
-          </small>
+          <div class="card-body" style="max-height: 320px; overflow-y: auto;">
+            <div id="clientsList"></div>
+            <p id="noClientsText" class="muted-note mb-0" style="display: none;">
+              No clients yet. Add one above to get started.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div class="col-md-8">
-        <div class="app-card mb-3">
-          <h5>Clients</h5>
-          <div id="clientsList"></div>
-        </div>
-
-        <div class="app-card">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">Availability Grid</h5>
-            <button id="generateBtn" class="btn btn-main">
-              Generate timetable
-            </button>
+      <!-- Right column: availability grid -->
+      <div class="col-lg-8 mb-3">
+        <div class="card">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Availability grid</h5>
+            <small class="muted-note mb-0">
+              10-minute slots · hourly accordion · drag to select / erase
+            </small>
           </div>
-          <small class="text-muted d-block mb-2">
-            Click cells to toggle when the active client is available.
-          </small>
-          <div style="overflow:auto; max-height: 420px;">
-            <table class="timetable-table">
-              <thead>
-                <tr>
-                  <th class="time-col">Time / Day</th>
-                  <th>Day 1</th>
-                  <th>Day 2</th>
-                  <th>Day 3</th>
-                  <th>Day 4</th>
-                  <th>Day 5</th>
-                  <th>Day 6</th>
-                </tr>
-              </thead>
-              <tbody id="gridBody">
-                <!-- Filled by JS to match back-end time slots -->
-              </tbody>
-            </table>
+          <div class="card-body">
+            <div id="timetableGrid" class="table-responsive"></div>
+            <small class="muted-note d-block mt-2">
+              Select a client, then click and drag over slots to mark availability.
+              Click the hour headers to collapse / expand sections.
+            </small>
           </div>
         </div>
       </div>
@@ -222,162 +724,309 @@
   </div>
 
   <script>
-    // ----- STATE -----
+    // ---------- STATE ----------
     let clients = [];
-    let activeClientId = null; // index in clients[]
-    let timeSlots = []; // filled from schedule template
-    const days = ["Day1", "Day2", "Day3", "Day4", "Day5", "Day6"];
+    let activeClientId = null;
+    let timeSlots = [];
+    let cycleLength = 6;
+    let workdayStart = "08:00";
+    let workdayEnd = "17:00";
+    let maxClientsPerSlot = 1;
+    let blackouts = [];
+    let nextGroupId = 1;
 
-    // ----- HELPERS -----
+    const STORAGE_KEY = "timegrid_state_v3";
+    const THEME_KEY = "timegrid_theme";
 
-    function buildTimeSlots(templateName) {
+    // Drag-selection state
+    let isMouseDown = false;
+    let dragMode = null; // "select" or "deselect"
+
+    // ---------- HELPERS ----------
+
+    function parseTimeStr(t) {
+      const parts = (t || "").split(":");
+      if (parts.length !== 2) return { h: 8, m: 0 };
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return { h: 8, m: 0 };
+      return { h, m };
+    }
+
+    function timeToMinutes(h, m) {
+      return h * 60 + m;
+    }
+
+    function minutesToStr(total) {
+      const h = Math.floor(total / 60);
+      const m = total % 60;
+      return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+    }
+
+    function buildTimeSlotsJS() {
+      const wsInput = document.getElementById("workdayStart");
+      const weInput = document.getElementById("workdayEnd");
+      workdayStart = (wsInput && wsInput.value) || workdayStart || "08:00";
+      workdayEnd = (weInput && weInput.value) || workdayEnd || "17:00";
+
+      const start = parseTimeStr(workdayStart);
+      const end = parseTimeStr(workdayEnd);
+      let startMinutes = timeToMinutes(start.h, start.m);
+      let endMinutes = timeToMinutes(end.h, end.m);
+
+      if (endMinutes <= startMinutes) {
+        startMinutes = timeToMinutes(8, 0);
+        endMinutes = timeToMinutes(17, 0);
+      }
+
+      const blackoutRanges = [];
+      (blackouts || []).forEach((b) => {
+        if (!b.start || !b.end) return;
+        const s = parseTimeStr(b.start);
+        const e = parseTimeStr(b.end);
+        const sb = timeToMinutes(s.h, s.m);
+        const eb = timeToMinutes(e.h, e.m);
+        if (eb > sb) blackoutRanges.push([sb, eb]);
+      });
+
+      function inBlackout(minuteVal) {
+        for (const [sb, eb] of blackoutRanges) {
+          if (sb <= minuteVal && minuteVal < eb) return true;
+        }
+        return false;
+      }
+
       const slots = [];
-      if (templateName === "campus_b") {
-        // Matches Python build_time_slots("campus_b")
-        slots.push("08:00");
-        slots.push("08:30");
-        // Then 40-min blocks starting at 9:00
-        let hour = 9;
-        let minute = 0;
-        const endHour = 17;
-
-        function timeToStr(h, m) {
-          return (h < 10 ? "0" + h : "" + h) + ":" + (m < 10 ? "0" + m : "" + m);
+      let current = startMinutes;
+      while (current < endMinutes) {
+        if (!inBlackout(current)) {
+          slots.push(minutesToStr(current));
         }
-
-        function add40(h, m) {
-          m += 40;
-          if (m >= 60) {
-            h += 1;
-            m -= 60;
-          }
-          return [h, m];
-        }
-
-        while (hour < endHour) {
-          const tStr = timeToStr(hour, minute);
-          // Skip recess windows 10:20 and 14:00 (approx)
-          if (!(hour === 10 && minute === 20) && !(hour === 14 && minute === 0)) {
-            slots.push(tStr);
-          }
-          [hour, minute] = add40(hour, minute);
-        }
-      } else {
-        // campus_a default – 30-min blocks 8–16, skip 12–13
-        for (let h = 8; h < 16; h++) {
-          for (let m of [0, 30]) {
-            if (h === 12) continue; // skip 12:00–12:30 and 12:30–13:00
-            const hh = h < 10 ? "0" + h : "" + h;
-            const mm = m === 0 ? "00" : "30";
-            slots.push(`${hh}:${mm}`);
-          }
-        }
+        current += 10;
       }
       return slots;
     }
 
-    function redrawGrid() {
-      const tbody = document.getElementById("gridBody");
-      tbody.innerHTML = "";
+    function getDaysArray() {
+      const days = [];
+      for (let i = 1; i <= cycleLength; i++) days.push("Day" + i);
+      return days;
+    }
 
-      timeSlots.forEach((slot) => {
-        const tr = document.createElement("tr");
+    function saveState() {
+      try {
+        const state = {
+          cycle_length: cycleLength,
+          workday_start: workdayStart,
+          workday_end: workdayEnd,
+          max_clients_per_slot: maxClientsPerSlot,
+          blackouts: blackouts,
+          clients: clients,
+          next_group_id: nextGroupId,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.error("Error saving state:", err);
+      }
+    }
 
-        const timeTd = document.createElement("td");
-        timeTd.className = "time-col";
-        timeTd.textContent = slot;
-        tr.appendChild(timeTd);
-
-        for (let d = 1; d <= 6; d++) {
-          const dayKey = "Day" + d;
-          const td = document.createElement("td");
-          td.className = "availability-cell";
-          td.dataset.day = dayKey;
-          td.dataset.time = slot;
-          td.addEventListener("click", onCellClick);
-          tr.appendChild(td);
+    function loadStateFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        if (state.cycle_length) cycleLength = parseInt(state.cycle_length, 10) || 6;
+        if (state.workday_start) workdayStart = state.workday_start;
+        if (state.workday_end) workdayEnd = state.workday_end;
+        if (state.max_clients_per_slot) {
+          maxClientsPerSlot = parseInt(state.max_clients_per_slot, 10) || 1;
         }
+        if (Array.isArray(state.blackouts)) blackouts = state.blackouts;
+        if (Array.isArray(state.clients)) clients = state.clients;
+        if (state.next_group_id) nextGroupId = state.next_group_id;
+        activeClientId = null;
 
-        tbody.appendChild(tr);
+        const cycleSelect = document.getElementById("cycleLength");
+        if (cycleSelect) {
+          const options = Array.from(cycleSelect.options).map(o => o.value);
+          if (options.includes(String(cycleLength))) {
+            cycleSelect.value = String(cycleLength);
+          }
+        }
+        const ws = document.getElementById("workdayStart");
+        const we = document.getElementById("workdayEnd");
+        if (ws) ws.value = workdayStart;
+        if (we) we.value = workdayEnd;
+        const mcs = document.getElementById("maxClientsPerSlot");
+        if (mcs) mcs.value = maxClientsPerSlot;
+      } catch (err) {
+        console.error("Error loading state:", err);
+      }
+    }
+
+    function loadThemeFromStorage() {
+      const theme = localStorage.getItem(THEME_KEY) || "dark";
+      if (theme === "light") {
+        document.body.classList.add("light-theme");
+      } else {
+        document.body.classList.remove("light-theme");
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle("light-theme");
+      localStorage.setItem(THEME_KEY, isLight ? "light" : "dark");
+    }
+
+    function renderBlackouts() {
+      const list = document.getElementById("blackoutList");
+      if (!list) return;
+      list.innerHTML = "";
+      blackouts.forEach((b, idx) => {
+        const li = document.createElement("li");
+        li.className = "muted-note d-flex justify-content-between align-items-center mb-1";
+        li.textContent = `${b.start || "?"} – ${b.end || "?"}`;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-xs btn-outline-secondary ml-2";
+        btn.textContent = "×";
+        btn.addEventListener("click", () => {
+          blackouts.splice(idx, 1);
+          renderBlackouts();
+          timeSlots = buildTimeSlotsJS();
+          redrawGrid();
+          saveState();
+        });
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+    }
+
+    // ---------- GRID RENDERING (with accordion) ----------
+
+    function redrawGrid() {
+      const container = document.getElementById("timetableGrid");
+      container.innerHTML = "";
+
+      const days = getDaysArray();
+
+      const table = document.createElement("table");
+      table.className = "availability-grid table-sm";
+
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+
+      const corner = document.createElement("th");
+      corner.className = "time-col";
+      corner.textContent = "Time";
+      headRow.appendChild(corner);
+
+      days.forEach((day) => {
+        const th = document.createElement("th");
+        th.textContent = day;
+        headRow.appendChild(th);
       });
 
-      // Re-apply currently stored availability
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      // Group times by hour using a Map to preserve insertion order
+      const hourMap = new Map();
+      timeSlots.forEach((t) => {
+        const hour = t.slice(0, 2); // "08", "09", "10", ...
+        if (!hourMap.has(hour)) hourMap.set(hour, []);
+        hourMap.get(hour).push(t);
+      });
+
+      hourMap.forEach((times, hourKey) => {
+        // Hour header row
+        const headerRow = document.createElement("tr");
+        headerRow.className = "hour-header-row";
+        headerRow.dataset.hour = hourKey;
+        headerRow.dataset.collapsed = "false";
+
+        const timeCell = document.createElement("td");
+        timeCell.className = "time-col";
+        timeCell.textContent = hourKey + ":00";
+        headerRow.appendChild(timeCell);
+
+        const labelCell = document.createElement("td");
+        labelCell.colSpan = days.length;
+        labelCell.className = "hour-header-label d-flex justify-content-between align-items-center";
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = "Hour " + hourKey;
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "hour-toggle-icon";
+        iconSpan.textContent = "▼";
+        labelCell.appendChild(textSpan);
+        labelCell.appendChild(iconSpan);
+
+        headerRow.appendChild(labelCell);
+        headerRow.addEventListener("click", () => {
+          const currentlyCollapsed = headerRow.dataset.collapsed === "true";
+          headerRow.dataset.collapsed = currentlyCollapsed ? "false" : "true";
+          iconSpan.textContent = currentlyCollapsed ? "▼" : "▲";
+          const rows = tbody.querySelectorAll(`tr.time-row.hour-${hourKey}`);
+          rows.forEach((r) => {
+            r.style.display = currentlyCollapsed ? "" : "none";
+          });
+        });
+
+        tbody.appendChild(headerRow);
+
+        // Time rows for this hour
+        times.forEach((time) => {
+          const tr = document.createElement("tr");
+          tr.className = `time-row hour-${hourKey}`;
+
+          const timeCell2 = document.createElement("td");
+          timeCell2.className = "time-col";
+          timeCell2.textContent = time;
+          tr.appendChild(timeCell2);
+
+          days.forEach((day) => {
+            const td = document.createElement("td");
+            td.className = "availability-cell";
+            td.dataset.day = day;
+            td.dataset.time = time;
+
+            td.addEventListener("mousedown", onCellMouseDown);
+            td.addEventListener("mouseover", onCellMouseOver);
+
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+      });
+
+      table.appendChild(tbody);
+      container.appendChild(table);
+
       refreshGridSelectionFromState();
     }
 
-    function refreshGridSelectionFromState() {
-      const cells = document.querySelectorAll(".availability-cell");
-      cells.forEach((cell) => {
-        cell.classList.remove("selected");
-      });
-
-      if (activeClientId === null) return;
-
-      const client = clients[activeClientId];
-      if (!client || !client.availability) return;
-
-      cells.forEach((cell) => {
-        const day = cell.dataset.day;
-        const time = cell.dataset.time;
-        const timesForDay = client.availability[day] || [];
-        if (timesForDay.includes(time)) {
-          cell.classList.add("selected");
-        }
-      });
-    }
-
     function renderClientsList() {
-      const listDiv = document.getElementById("clientsList");
-      listDiv.innerHTML = "";
+      const listEl = document.getElementById("clientsList");
+      const emptyText = document.getElementById("noClientsText");
+      listEl.innerHTML = "";
 
-      if (clients.length === 0) {
-        listDiv.innerHTML =
-          '<p class="text-muted mb-0">No clients added yet.</p>';
+      if (!clients.length) {
+        if (emptyText) emptyText.style.display = "block";
         return;
+      } else {
+        if (emptyText) emptyText.style.display = "none";
       }
 
       clients.forEach((client, idx) => {
-        const row = document.createElement("div");
-        row.className = "client-row";
+        const card = document.createElement("div");
+        card.className = "client-card" + (idx === activeClientId ? " active" : "");
 
-        const left = document.createElement("div");
-        const nameEl = document.createElement("strong");
-        nameEl.textContent = client.name || "Unnamed";
-
-        const tagEl = document.createElement("span");
-        if (client.tag) {
-          tagEl.className = "pill";
-          tagEl.textContent = client.tag;
-        }
-
-        const metaEl = document.createElement("div");
-        metaEl.style.fontSize = "0.75rem";
-        metaEl.className = "text-muted";
-        metaEl.textContent =
-          client.sessions_needed +
-          " session" +
-          (client.sessions_needed !== 1 ? "s" : "") +
-          " • " +
-          (client.spacing_rule === "once_per_day"
-            ? "Max 1/day"
-            : "No spacing rule");
-
-        left.appendChild(nameEl);
-        if (client.tag) left.appendChild(tagEl);
-        left.appendChild(document.createElement("br"));
-        left.appendChild(metaEl);
-
-        const right = document.createElement("div");
-
-        const selectBtn = document.createElement("button");
-        selectBtn.className =
-          "btn btn-sm " +
-          (activeClientId === idx ? "btn-main" : "btn-outline-secondary");
-        selectBtn.textContent = activeClientId === idx ? "Active" : "Select";
-        selectBtn.style.marginRight = "4px";
-        selectBtn.addEventListener("click", () => {
+        card.addEventListener("click", () => {
           if (activeClientId === idx) {
-            // Deselect
             activeClientId = null;
           } else {
             activeClientId = idx;
@@ -386,10 +1035,49 @@
           refreshGridSelectionFromState();
         });
 
+        const firstRow = document.createElement("div");
+        firstRow.className = "d-flex justify-content-between align-items-center";
+
+        const leftWrap = document.createElement("div");
+        leftWrap.className = "d-flex align-items-center";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "mr-2";
+        checkbox.checked = !!client._selectedForGrouping;
+        checkbox.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          client._selectedForGrouping = checkbox.checked;
+          saveState();
+        });
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "client-card-title";
+        nameEl.textContent = client.name || "Unnamed";
+
+        if (client.tag) {
+          const tagEl = document.createElement("span");
+          tagEl.className = "client-tag";
+          tagEl.textContent = client.tag;
+          nameEl.appendChild(tagEl);
+        }
+
+        if (client.group_id) {
+          const gEl = document.createElement("span");
+          gEl.className = "group-label";
+          gEl.textContent = client.group_id;
+          nameEl.appendChild(gEl);
+        }
+
+        leftWrap.appendChild(checkbox);
+        leftWrap.appendChild(nameEl);
+
         const deleteBtn = document.createElement("button");
-        deleteBtn.className = "btn btn-sm btn-outline-danger";
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn btn-outline-danger btn-xs";
         deleteBtn.textContent = "Delete";
-        deleteBtn.addEventListener("click", () => {
+        deleteBtn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
           clients.splice(idx, 1);
           if (activeClientId === idx) {
             activeClientId = null;
@@ -398,43 +1086,140 @@
           }
           renderClientsList();
           refreshGridSelectionFromState();
+          saveState();
         });
 
-        right.appendChild(selectBtn);
-        right.appendChild(deleteBtn);
+        firstRow.appendChild(leftWrap);
+        firstRow.appendChild(deleteBtn);
 
-        row.appendChild(left);
-        row.appendChild(right);
+        const metaEl = document.createElement("div");
+        metaEl.className = "client-card-meta";
 
-        listDiv.appendChild(row);
+        const lenText = (client.session_length_minutes || 10) + " min each";
+        const sessionsText =
+          (client.sessions_needed || 0) +
+          " session" +
+          (client.sessions_needed === 1 ? "" : "s");
+        const spacingText =
+          client.spacing_rule === "once_per_day"
+            ? "Max 1/day"
+            : client.spacing_rule === "no_consecutive_days"
+            ? "No consecutive days"
+            : "No spacing rule";
+        const perDayText = client.max_per_day
+          ? ` • Max ${client.max_per_day}/day`
+          : "";
+
+        metaEl.textContent = `${sessionsText} • ${lenText} • ${spacingText}${perDayText}`;
+
+        card.appendChild(firstRow);
+        card.appendChild(metaEl);
+
+        listEl.appendChild(card);
       });
     }
 
-    function onCellClick(e) {
-      if (activeClientId === null) {
-        alert("Please select a client first.");
-        return;
-      }
-      const cell = e.currentTarget;
+    function refreshGridSelectionFromState() {
+      const container = document.getElementById("timetableGrid");
+      const cells = container.querySelectorAll(".availability-cell");
+      cells.forEach((cell) => cell.classList.remove("selected"));
+
+      if (activeClientId === null || !clients[activeClientId]) return;
+
+      const client = clients[activeClientId];
+      const availability = client.availability || {};
+
+      cells.forEach((cell) => {
+        const day = cell.dataset.day;
+        const time = cell.dataset.time;
+        const timesForDay = availability[day] || [];
+        if (timesForDay.indexOf(time) !== -1) {
+          cell.classList.add("selected");
+        }
+      });
+    }
+
+    function applyCellAction(cell, mode) {
+      if (activeClientId === null || !clients[activeClientId]) return;
+
+      const client = clients[activeClientId];
+      if (!client.availability) client.availability = {};
+
       const day = cell.dataset.day;
       const time = cell.dataset.time;
 
-      const client = clients[activeClientId];
-      if (!client.availability[day]) {
-        client.availability[day] = [];
-      }
+      if (!client.availability[day]) client.availability[day] = [];
 
-      const idx = client.availability[day].indexOf(time);
-      if (idx === -1) {
-        client.availability[day].push(time);
+      const arr = client.availability[day];
+      const idx = arr.indexOf(time);
+
+      if (mode === "select") {
+        if (idx === -1) arr.push(time);
         cell.classList.add("selected");
-      } else {
-        client.availability[day].splice(idx, 1);
+      } else if (mode === "deselect") {
+        if (idx !== -1) arr.splice(idx, 1);
         cell.classList.remove("selected");
+      } else {
+        if (idx === -1) {
+          arr.push(time);
+          cell.classList.add("selected");
+        } else {
+          arr.splice(idx, 1);
+          cell.classList.remove("selected");
+        }
       }
     }
 
-    // ----- EVENT HANDLERS -----
+    // ---------- CELL EVENTS ----------
+
+    function onCellMouseDown(e) {
+      if (activeClientId === null || !clients[activeClientId]) {
+        alert("Please select a client first.");
+        return;
+      }
+
+      e.preventDefault();
+      const cell = e.currentTarget;
+
+      isMouseDown = true;
+      const currentlySelected = cell.classList.contains("selected");
+      dragMode = currentlySelected ? "deselect" : "select";
+
+      applyCellAction(cell, dragMode);
+      saveState();
+    }
+
+    function onCellMouseOver(e) {
+      if (!isMouseDown || !dragMode) return;
+      if (activeClientId === null || !clients[activeClientId]) return;
+
+      const cell = e.currentTarget;
+      applyCellAction(cell, dragMode);
+      saveState();
+    }
+
+    document.addEventListener("mouseup", () => {
+      isMouseDown = false;
+      dragMode = null;
+    });
+
+    // ---------- EVENT HANDLERS ----------
+
+    document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+
+    document.getElementById("addBlackoutBtn").addEventListener("click", () => {
+      const s = document.getElementById("blackoutStart").value;
+      const e = document.getElementById("blackoutEnd").value;
+      if (!s || !e) {
+        alert("Please enter both a start and end time.");
+        return;
+      }
+      blackouts.push({ start: s, end: e });
+      renderBlackouts();
+      timeSlots = buildTimeSlotsJS();
+      redrawGrid();
+      saveState();
+    });
 
     document.getElementById("addClientBtn").addEventListener("click", () => {
       const name = document.getElementById("clientName").value.trim();
@@ -442,6 +1227,11 @@
         document.getElementById("sessionsNeeded").value,
         10
       );
+      const sessionLength = parseInt(
+        document.getElementById("sessionLength").value,
+        10
+      );
+      const maxPerDay = document.getElementById("maxPerDay").value.trim();
       const tag = document.getElementById("clientTag").value.trim();
       const spacingRule = document.getElementById("spacingRule").value;
 
@@ -453,74 +1243,188 @@
         alert("Please enter how many sessions they need.");
         return;
       }
+      if (!sessionLength || sessionLength <= 0) {
+        alert("Please enter a valid session length in minutes.");
+        return;
+      }
 
       clients.push({
         name: name,
         sessions_needed: sessionsNeeded,
+        session_length_minutes: sessionLength,
         tag: tag || "",
         spacing_rule: spacingRule,
+        max_per_day: maxPerDay || "",
+        group_id: "",
         availability: {},
       });
 
-      // reset form
       document.getElementById("clientName").value = "";
       document.getElementById("sessionsNeeded").value = "1";
+      document.getElementById("sessionLength").value = "60";
+      document.getElementById("maxPerDay").value = "";
       document.getElementById("clientTag").value = "";
       document.getElementById("spacingRule").value = "none";
 
-      // make this new client active
       activeClientId = clients.length - 1;
       renderClientsList();
       refreshGridSelectionFromState();
+      saveState();
     });
 
-    document.getElementById("scheduleTemplate").addEventListener("change", () => {
-      const tmpl = document.getElementById("scheduleTemplate").value;
-      timeSlots = buildTimeSlots(tmpl);
+    document.getElementById("groupSelectedBtn").addEventListener("click", () => {
+      const selected = clients.filter(c => c._selectedForGrouping);
+      if (selected.length < 2) {
+        alert("Select at least two clients (checkboxes) to form a group.");
+        return;
+      }
+      const groupId = "G" + nextGroupId;
+      nextGroupId += 1;
+      selected.forEach(c => {
+        c.group_id = groupId;
+        c._selectedForGrouping = false;
+      });
+      renderClientsList();
+      saveState();
+    });
+
+    document.getElementById("cycleLength").addEventListener("change", () => {
+      const val = parseInt(document.getElementById("cycleLength").value, 10);
+      cycleLength = isNaN(val) ? 6 : val;
+      timeSlots = buildTimeSlotsJS();
       redrawGrid();
+      saveState();
+    });
+
+    document.getElementById("workdayStart").addEventListener("change", () => {
+      timeSlots = buildTimeSlotsJS();
+      redrawGrid();
+      saveState();
+    });
+
+    document.getElementById("workdayEnd").addEventListener("change", () => {
+      timeSlots = buildTimeSlotsJS();
+      redrawGrid();
+      saveState();
+    });
+
+    document.getElementById("maxClientsPerSlot").addEventListener("change", (e) => {
+      const val = parseInt(e.target.value, 10);
+      maxClientsPerSlot = isNaN(val) || val < 1 ? 1 : val;
+      e.target.value = maxClientsPerSlot;
+      saveState();
     });
 
     document.getElementById("generateBtn").addEventListener("click", () => {
-      if (clients.length === 0) {
-        alert("Please add at least one client.");
+      if (!clients.length) {
+        alert("Please add at least one client before generating a timetable.");
         return;
       }
 
-      // Build payload for backend
       const payload = {
-        use_case: document.getElementById("useCase").value,
-        schedule_template: document.getElementById("scheduleTemplate").value,
+        cycle_length: cycleLength,
+        workday_start: workdayStart,
+        workday_end: workdayEnd,
+        max_clients_per_slot: maxClientsPerSlot,
+        blackouts: blackouts,
         clients: clients,
-        // groups: [] // reserved for future
       };
 
-      fetch("/generate_timetable", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Error generating timetable");
-          return res.text();
-        })
-        .then((html) => {
-          // Replace page with returned HTML
-          document.open();
-          document.write(html);
-          document.close();
-        })
-        .catch((err) => {
-          console.error(err);
-          alert("Error generating timetable.");
-        });
+      document.getElementById("payloadInput").value = JSON.stringify(payload);
+      saveState();
+      document.getElementById("generateForm").submit();
     });
 
-    // ----- INIT -----
+    document.getElementById("saveJsonBtn").addEventListener("click", () => {
+      if (!clients.length) {
+        alert("No clients to save.");
+        return;
+      }
+
+      const payload = {
+        cycle_length: cycleLength,
+        workday_start: workdayStart,
+        workday_end: workdayEnd,
+        max_clients_per_slot: maxClientsPerSlot,
+        blackouts: blackouts,
+        clients: clients,
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "timegrid_config.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("loadJsonBtn").addEventListener("click", () => {
+      document.getElementById("jsonFileInput").click();
+    });
+
+    document.getElementById("jsonFileInput").addEventListener("change", function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !Array.isArray(data.clients)) {
+            alert("Invalid configuration file.");
+            return;
+          }
+
+          cycleLength = parseInt(data.cycle_length, 10) || 6;
+          workdayStart = data.workday_start || "08:00";
+          workdayEnd = data.workday_end || "17:00";
+          maxClientsPerSlot = parseInt(data.max_clients_per_slot, 10) || 1;
+          blackouts = data.blackouts || [];
+          clients = data.clients || [];
+          activeClientId = null;
+
+          const cycleSelect = document.getElementById("cycleLength");
+          if (cycleSelect) {
+            const options = Array.from(cycleSelect.options).map(o => o.value);
+            if (options.includes(String(cycleLength))) {
+              cycleSelect.value = String(cycleLength);
+            } else {
+              cycleSelect.value = "6";
+              cycleLength = 6;
+            }
+          }
+          document.getElementById("workdayStart").value = workdayStart;
+          document.getElementById("workdayEnd").value = workdayEnd;
+          document.getElementById("maxClientsPerSlot").value = maxClientsPerSlot;
+
+          renderBlackouts();
+          timeSlots = buildTimeSlotsJS();
+          redrawGrid();
+          renderClientsList();
+          saveState();
+        } catch (err) {
+          console.error(err);
+          alert("Error reading configuration file.");
+        }
+      };
+      reader.readAsText(file);
+      this.value = "";
+    });
+
+    // ---------- INIT ----------
     (function init() {
-      const tmpl = document.getElementById("scheduleTemplate").value;
-      timeSlots = buildTimeSlots(tmpl);
+      loadThemeFromStorage();
+      loadStateFromStorage();
+      renderBlackouts();
+      timeSlots = buildTimeSlotsJS();
       redrawGrid();
       renderClientsList();
+      refreshGridSelectionFromState();
     })();
   </script>
 </body>
