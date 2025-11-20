@@ -2,67 +2,223 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Generated Timetable</title>
+  <title>TimeGrid · Timetable</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
   />
   <style>
-    body {
+    :root {
+      --tg-bg: #020617;
+      --tg-surface: #020617;
+      --tg-border: #1e293b;
+      --tg-accent: #22c55e;
+      --tg-muted: #64748b;
+      --tg-text: #e5e7eb;
+    }
+
+    body.light-theme {
+      --tg-bg: #f1f5f9;
+      --tg-surface: #ffffff;
+      --tg-border: #cbd5e1;
+      --tg-accent: #16a34a;
+      --tg-muted: #6b7280;
+      --tg-text: #0f172a;
       background: #f1f5f9;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #0f172a, #020617 60%);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       padding: 20px;
+      color: var(--tg-text);
+    }
+
+    .page-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .page-header h3 {
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    .page-header small {
+      font-size: 0.8rem;
+      color: var(--tg-muted);
+    }
+
+    .btn-outline-secondary {
+      border-color: #475569;
+      color: #e5e7eb;
+    }
+
+    body.light-theme .btn-outline-secondary {
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .btn-outline-secondary:hover {
+      background: #1e293b;
+      border-color: #e5e7eb;
+      color: #e5e7eb;
+    }
+
+    body.light-theme .btn-outline-secondary:hover {
+      background: #e5e7eb;
+      border-color: #0f172a;
+      color: #0f172a;
+    }
+
+    .btn-outline-primary {
+      border-color: var(--tg-accent);
+      color: var(--tg-accent);
+    }
+
+    .btn-outline-primary:hover {
+      background: var(--tg-accent);
+      color: #022c22;
+    }
+
+    .card {
+      border-radius: 0.9rem;
+      border: 1px solid var(--tg-border);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.1), var(--tg-surface));
+      color: var(--tg-text);
+      box-shadow:
+        0 20px 40px rgba(15, 23, 42, 0.6),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    body.light-theme .card {
+      box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.1),
+        0 0 0 1px rgba(148, 163, 184, 0.4);
+      background: #ffffff;
+    }
+
+    .card-header {
+      border-bottom: 1px solid rgba(51, 65, 85, 0.9);
+      background: linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.8));
+      color: #e5e7eb;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    body.light-theme .card-header {
+      background: linear-gradient(to right, #0f172a, #1f2937);
+      color: #e5e7eb;
+      border-bottom-color: #e2e8f0;
+    }
+
+    .card-header strong {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #cbd5f5;
     }
 
     .timetable-table {
       width: 100%;
       border-collapse: collapse;
-      background: #ffffff;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
-      border-radius: 0.75rem;
+      background: var(--tg-surface);
+      border-radius: 0.9rem;
       overflow: hidden;
     }
 
     .timetable-table th,
     .timetable-table td {
-      border: 1px solid #e2e8f0;
-      padding: 6px 8px;
+      border: 1px solid var(--tg-border);
+      padding: 4px 6px;
       text-align: center;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      color: var(--tg-text);
     }
 
     .timetable-table thead th {
-      background: #0f172a;
+      background: var(--tg-surface);
       color: #e5e7eb;
       font-weight: 600;
-      position: sticky;
-      top: 0;
-      z-index: 2;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.72rem;
+    }
+
+    body.light-theme .timetable-table thead th {
+      color: #0f172a;
+      background: #e5e7eb;
     }
 
     .time-col {
-      background: #e5e7eb;
+      background: var(--tg-surface);
       font-weight: 600;
       width: 70px;
       position: sticky;
       left: 0;
       z-index: 1;
+      color: #cbd5f5;
+    }
+
+    body.light-theme .time-col {
+      color: #0f172a;
+      background: #f9fafb;
     }
 
     .slot {
-      min-width: 110px;
+      min-width: 120px;
       height: 34px;
       vertical-align: middle;
       white-space: nowrap;
+      position: relative;
     }
 
     .slot-empty {
-      background: #f9fafb;
-      color: #9ca3af;
+      background: var(--tg-surface);
+      color: #4b5563;
     }
 
-    /* Color classes for different clients */
+    /* show a dash for visually empty slots */
+    .slot-empty::after {
+      content: "–";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.78rem;
+      color: #4b5563;
+      pointer-events: none;
+    }
+
+    .slot-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: center;
+    }
+
+    .slot-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      margin: 1px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    /* Color classes for clients */
     .color-1 { background: #dbeafe; color: #1d4ed8; }
     .color-2 { background: #dcfce7; color: #15803d; }
     .color-3 { background: #fee2e2; color: #b91c1c; }
@@ -79,36 +235,89 @@
       border-radius: 999px;
       font-size: 0.75rem;
       margin: 2px;
-      background: #e5e7eb;
+      background: var(--tg-bg);
+      border: 1px solid var(--tg-border);
+    }
+
+    .legend-color {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      margin-right: 6px;
+    }
+
+    .muted-note {
+      font-size: 0.78rem;
+      color: var(--tg-muted);
+    }
+
+    .theme-toggle-btn {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: transparent;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    body.light-theme .theme-toggle-btn {
+      border-color: #cbd5e1;
+      color: #0f172a;
+      background: #ffffff;
     }
 
     @media print {
       body {
         padding: 0;
         background: #ffffff;
+        color: #111827;
       }
       .no-print {
         display: none !important;
       }
+      .card {
+        box-shadow: none;
+        background: #ffffff;
+      }
       .timetable-table {
         box-shadow: none;
+      }
+      .time-col,
+      .timetable-table thead th {
+        background: #f3f4f6 !important;
+        color: #111827 !important;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+  <div class="page-shell">
+    <div class="page-header no-print">
       <div>
-        <h3 class="mb-0">Generated Timetable</h3>
-        <small class="text-muted">
-          Use case: {{ use_case|default("general") }},
-          Template: {{ schedule_template|default("campus_a") }}
+        <h3 class="mb-1">TimeGrid Timetable</h3>
+        <small>
+          Cycle length: {{ days|length }} day{{ days|length != 1 and 's' or '' }} ·
+          Grid: 10-minute slots
         </small>
       </div>
-      <div>
+      <div class="d-flex align-items-center">
+        <label class="mb-0 mr-2" style="font-size:0.8rem;">Filter by client:</label>
+        <select id="clientFilter" class="form-control form-control-sm mr-2" style="width:auto;">
+          <option value="__ALL__">All clients</option>
+          {% for name, cls in student_colors.items() %}
+            <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+        <button id="exportClientBtn" class="btn btn-sm btn-outline-primary mr-2">
+          Export selected client
+        </button>
         <button id="printBtn" class="btn btn-sm btn-outline-primary mr-2">
-          Print / Save as PDF
+          Print / Save all as PDF
+        </button>
+        <button id="themeToggle" class="theme-toggle-btn mr-2">
+          Toggle light / dark
         </button>
         <a href="/" class="btn btn-sm btn-outline-secondary">← Back to editor</a>
       </div>
@@ -116,36 +325,56 @@
 
     <div class="row">
       <div class="col-lg-9 mb-3">
-        <div class="table-responsive">
-          <table class="timetable-table">
-            <thead>
-              <tr>
-                <th class="time-col">Time</th>
-                {% for day in days %}
-                  <th>{{ day }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for time in time_slots %}
-                <tr>
-                  <td class="time-col">{{ time }}</td>
-                  {% for day in days %}
-                    {% set name = timetable[day][time] %}
-                    {% if name %}
-                      <td class="slot {{ student_colors.get(name, '') }}">
-                        {{ name }}
-                      </td>
-                    {% else %}
-                      <td class="slot slot-empty">
-                        –
-                      </td>
-                    {% endif %}
+        <div class="card">
+          <div class="card-header py-2">
+            <strong>Timetable</strong>
+          </div>
+          <div class="card-body p-2">
+            <div class="table-responsive">
+              <table class="timetable-table">
+                <thead>
+                  <tr>
+                    <th class="time-col">Time</th>
+                    {% for day in days %}
+                      <th>{{ day }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for time in time_slots %}
+                    <tr>
+                      <td class="time-col">{{ time }}</td>
+                      {% for day in days %}
+                        {% set names = timetable[day][time] %}
+                        {% if names %}
+                          <td class="slot">
+                            <div class="slot-inner">
+                              {% for n in names %}
+                                <span
+                                  class="slot-pill {{ student_colors.get(n, '') }}"
+                                  data-name="{{ n }}"
+                                >
+                                  {{ n }}
+                                </span>
+                              {% endfor %}
+                            </div>
+                          </td>
+                        {% else %}
+                          <td class="slot slot-empty">
+                            <!-- purely visual dash via ::after -->
+                          </td>
+                        {% endif %}
+                      {% endfor %}
+                    </tr>
                   {% endfor %}
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted-note mt-2 mb-0">
+              Use "Filter by client" + "Export selected client" to generate a printable / PDF schedule for one person,
+              or "Print / Save all" for the full timetable.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -160,17 +389,22 @@
                 {% for name, info in summary.items() %}
                   <li class="mb-2">
                     <div><strong>{{ name }}</strong></div>
-                    <div style="font-size: 0.8rem;" class="text-muted">
+                    <div class="muted-note">
                       {{ info.scheduled }} / {{ info.needed }} sessions scheduled
                       {% if info.session_length %}
                         • {{ info.session_length }} min each
                       {% endif %}
                     </div>
+                    {% if info.reason %}
+                      <div class="muted-note" style="font-size:0.74rem;">
+                        Suggestion: {{ info.reason }}
+                      </div>
+                    {% endif %}
                   </li>
                 {% endfor %}
               </ul>
             {% else %}
-              <p class="text-muted mb-0" style="font-size: 0.85rem;">
+              <p class="muted-note mb-0">
                 No clients in summary.
               </p>
             {% endif %}
@@ -184,13 +418,13 @@
           <div class="card-body p-2">
             {% if student_colors %}
               {% for name, cls in student_colors.items() %}
-                <div class="legend-pill mb-1">
-                  <span class="{{ cls }} mr-2" style="display:inline-block;width:12px;height:12px;border-radius:999px;"></span>
+                <div class="legend-pill">
+                  <span class="legend-color {{ cls }}"></span>
                   <span>{{ name }}</span>
                 </div>
               {% endfor %}
             {% else %}
-              <p class="text-muted mb-0" style="font-size: 0.85rem;">
+              <p class="muted-note mb-0">
                 No clients scheduled.
               </p>
             {% endif %}
@@ -205,11 +439,11 @@
             {% if conflicts %}
               <ul class="mb-0">
                 {% for msg in conflicts %}
-                  <li style="font-size: 0.8rem;">{{ msg }}</li>
+                  <li class="muted-note">{{ msg }}</li>
                 {% endfor %}
               </ul>
             {% else %}
-              <p class="text-muted mb-0" style="font-size: 0.85rem;">
+              <p class="muted-note mb-0">
                 No scheduling conflicts detected.
               </p>
             {% endif %}
@@ -220,9 +454,77 @@
   </div>
 
   <script>
+    const THEME_KEY = "timegrid_theme";
+
+    function loadTheme() {
+      const theme = localStorage.getItem(THEME_KEY) || "dark";
+      if (theme === "light") {
+        document.body.classList.add("light-theme");
+      } else {
+        document.body.classList.remove("light-theme");
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle("light-theme");
+      localStorage.setItem(THEME_KEY, isLight ? "light" : "dark");
+    }
+
+    function applyClientFilter() {
+      const select = document.getElementById("clientFilter");
+      const value = select.value;
+
+      const cells = document.querySelectorAll(".slot");
+      cells.forEach((cell) => {
+        const wrapper = cell.querySelector(".slot-inner");
+        if (!wrapper) {
+          // cell has no bookings at all
+          return;
+        }
+        const pills = wrapper.querySelectorAll(".slot-pill");
+        if (!pills.length) return;
+
+        let anyVisible = false;
+
+        pills.forEach((pill) => {
+          const name = pill.dataset.name;
+          const shouldShow = (value === "__ALL__" || name === value);
+          pill.style.display = shouldShow ? "inline-flex" : "none";
+          if (shouldShow) anyVisible = true;
+        });
+
+        if (!anyVisible) {
+          wrapper.style.display = "none";
+          cell.classList.add("slot-empty");
+        } else {
+          wrapper.style.display = "flex";
+          cell.classList.remove("slot-empty");
+        }
+      });
+    }
+
     document.getElementById("printBtn").addEventListener("click", function () {
       window.print();
     });
+
+    document.getElementById("exportClientBtn").addEventListener("click", function () {
+      const select = document.getElementById("clientFilter");
+      const val = select.value;
+      if (val === "__ALL__") {
+        alert("Choose a specific client in the filter first.");
+        return;
+      }
+      applyClientFilter();
+      window.print();
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+    document.getElementById("clientFilter").addEventListener("change", applyClientFilter);
+
+    (function init() {
+      loadTheme();
+      applyClientFilter(); // start with "All clients" view
+    })();
   </script>
 </body>
 </html>
